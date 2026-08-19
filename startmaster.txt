@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noah Stream - Ultimate Edition v10</title>
+    <style>
+        :root {
+            --bg-color: #0f0f11;
+            --surface-color: #1a1a1d;
+            --primary-color: #e50914;
+            --primary-hover: #b80710;
+            --accent-pin: #f59e0b;
+            --text-main: #f1f1f1;
+            --text-muted: #a1a1a1;
+            --border-radius: 12px; 
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .ui-hidden { display: none !important; }
+
+        /* Header UI */
+        header {
+            background-color: var(--surface-color);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #222;
+            flex-wrap: wrap;
+            gap: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .brand { font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        .brand span { color: var(--primary-color); }
+
+        .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .divider { color: #444; margin: 0 4px; }
+
+        input[type="text"] {
+            padding: 8px 16px; border-radius: 8px; border: 1px solid #444;
+            background-color: #222; color: white; width: 300px; outline: none;
+        }
+        input[type="text"]:focus { border-color: var(--primary-color); }
+
+        button {
+            padding: 8px 16px; border-radius: 8px; border: none;
+            cursor: pointer; font-weight: 600; transition: all 0.2s; color: white;
+        }
+        .btn-primary { background-color: var(--primary-color); }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-success { background-color: #107c10; }
+        .btn-success:hover { background-color: #0c5e0c; }
+        .btn-danger { background-color: #dc3545; }
+        .btn-danger:hover { background-color: #b02a37; }
+        .btn-secondary { background-color: #333; color: var(--text-main); }
+        .btn-secondary:hover { background-color: #444; }
+        
+        /* Tombol Pin */
+        .btn-pin { background-color: #444; font-size: 0.8rem; padding: 4px 8px; }
+        .btn-pin.pinned { background-color: var(--accent-pin); color: #000; }
+
+        /* Floating Menu Button */
+        .floating-menu-btn {
+            position: fixed; top: 16px; right: 24px; z-index: 9999;
+            background-color: rgba(26, 26, 29, 0.8); border: 1px solid #444; backdrop-filter: blur(4px);
+        }
+
+        /* ECO MODE */
+        .btn-eco { background-color: #28a745; border: 2px solid #28a745; }
+        .btn-eco.active { background-color: transparent; color: #28a745; }
+
+        select {
+            padding: 8px 12px; border-radius: 8px; background-color: #222;
+            color: white; border: 1px solid #444;
+        }
+
+        /* Recent Streams Panel */
+        .recent-container {
+            background-color: #151515; padding: 8px 24px; display: flex; align-items: center;
+            gap: 12px; border-bottom: 1px solid #2a2a2a; overflow-x: auto;
+        }
+        .recent-list { display: flex; gap: 8px; }
+        .recent-chip {
+            background-color: #222; border: 1px solid #444; border-radius: 16px; padding: 4px 12px;
+            font-size: 0.85rem; display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+        }
+        .recent-chip:hover { border-color: var(--primary-color); }
+        .recent-chip span { cursor: pointer; }
+        .recent-chip button {
+            background: none; border: none; color: var(--text-muted); padding: 0 4px;
+            cursor: pointer; font-size: 0.9rem;
+        }
+        .recent-chip button:hover { color: var(--primary-color); }
+
+        /* Main Grid */
+        main { flex: 1; padding: 16px; overflow-y: auto; }
+        .grid-container {
+            display: grid; 
+            gap: 16px; 
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            transition: all 0.3s ease;
+            align-items: start; 
+        }
+        .grid-container.layout-1 { grid-template-columns: 1fr; }
+        .grid-container.layout-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-container.layout-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-container.layout-4 { grid-template-columns: repeat(4, 1fr); }
+
+        /* Stream Cell */
+        .stream-cell {
+            background: transparent; 
+            border: none;
+            display: flex; 
+            flex-direction: column; 
+            width: 100%;
+        }
+        
+        /* PINNED STREAM LOGIC: Memaksa elemen yang dipin melebar full 1 kolom penuh di grid */
+        .stream-cell.is-pinned {
+            grid-column: 1 / -1 !important;
+        }
+
+        .stream-content { 
+            display: flex; 
+            flex-direction: column; /* Mengubah arah jadi ke bawah (Stacked) */
+            width: 100%; 
+            gap: 8px; 
+        }
+
+        /* PADDING HACK 16:9 */
+        .video-container {
+            width: 100%; 
+            position: relative; 
+            background-color: #000; 
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+
+        .video-wrapper {
+            width: 100%;
+            padding-bottom: 56.25%; 
+            position: relative;
+        }
+        
+        .video-wrapper iframe, .glass-overlay { 
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%; 
+            border: none; 
+            transition: all 0.3s ease; 
+        }
+
+        /* HEADER AUTO-HIDE */
+        .cell-header {
+            position: absolute;
+            top: 0; left: 0; width: 100%;
+            padding: 12px 16px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20; 
+            opacity: 0; 
+            pointer-events: none; 
+            transition: opacity 0.3s ease;
+        }
+
+        .video-container:hover .cell-header {
+            opacity: 1; 
+            pointer-events: auto; 
+        }
+
+        .cell-actions { display: flex; gap: 8px; align-items: center; }
+        .cell-actions button { padding: 4px 10px; font-size: 0.8rem; background: rgba(68, 68, 68, 0.9); }
+        .cell-actions button:hover { background: #666; }
+        .cell-actions button.btn-danger { background: rgba(220, 53, 69, 0.9); }
+
+        /* GLASS OVERLAY HACK */
+        .glass-overlay {
+            z-index: 10; cursor: pointer; background: transparent;
+        }
+
+        /* ECO MODE CSS SCALING */
+        body.eco-active .video-wrapper iframe {
+            width: 50%; height: 50%; transform: scale(2); transform-origin: top left;
+        }
+
+        /* Chat Panel di Bawah Video (Stacked & Full Width) */
+        .chat-wrapper {
+            width: 100%; 
+            height: 350px; /* Tinggi panel chat di bawah video */
+            background-color: #181818; 
+            border-radius: var(--border-radius);
+            display: flex; 
+            flex-direction: column; 
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+        .chat-wrapper.hidden { height: 0; opacity: 0; margin-top: -8px; border: none; overflow: hidden; }
+        .chat-wrapper iframe { width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body>
+
+    <button id="showMenuBtn" class="floating-menu-btn ui-hidden" onclick="toggleMenuBar()">▼ Show Menu</button>
+
+    <header id="mainHeader">
+        <div class="brand">Noah <span>Stream</span></div>
+        <div class="controls">
+            <input type="text" id="videoInput" placeholder="URL / ID YouTube..." onkeypress="handleEnterKey(event)" />
+            <button class="btn-primary" onclick="handleAddStreamInput()">+ Add Stream</button>
+            <span class="divider">|</span>
+            <select id="layoutSelect" onchange="changeLayout()">
+                <option value="auto">Auto Layout</option>
+                <option value="1">1 Column</option>
+                <option value="2">2 Columns</option>
+                <option value="3">3 Columns</option>
+                <option value="4">4 Columns</option>
+            </select>
+            <button onclick="syncAllStreams()" class="btn-success">Sync to Live</button>
+            <button id="ecoBtn" class="btn-eco" onclick="toggleEcoMode()">🍃 Eco Mode: OFF</button>
+            <span class="divider">|</span>
+            <button class="btn-secondary" onclick="toggleMenuBar()">▲ Hide Menu</button>
+        </div>
+    </header>
+
+    <div class="recent-container" id="recentPanel">
+        <span style="color: var(--text-muted); font-size: 0.85rem; white-space: nowrap;">Recent Streams:</span>
+        <div id="recentList" class="recent-list"></div>
+    </div>
+
+    <main>
+        <div class="grid-container" id="streamGrid"></div>
+    </main>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        let ytPlayers = {}; 
+        let streamCount = 0;
+        let activeStreams = []; // Berisi objek: { id: 'VIDEO_ID', pinned: false }
+        let recentHistory = [];
+        let isEcoMode = false;
+
+        function onYouTubeIframeAPIReady() {
+            loadSession();
+        }
+
+        function handleEnterKey(event) {
+            if (event.key === 'Enter') handleAddStreamInput();
+        }
+
+        function toggleMenuBar() {
+            document.getElementById('mainHeader').classList.toggle('ui-hidden');
+            document.getElementById('recentPanel').classList.toggle('ui-hidden');
+            document.getElementById('showMenuBtn').classList.toggle('ui-hidden');
+        }
+
+        function extractVideoID(url) {
+            const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|live\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : url; 
+        }
+
+        function loadSession() {
+            const savedActive = JSON.parse(localStorage.getItem('noah_active_v10') || '[]');
+            recentHistory = JSON.parse(localStorage.getItem('noah_recent') || '[]');
+            renderRecents();
+            
+            // Render ulang stream aktif
+            savedActive.forEach(item => {
+                let vId = typeof item === 'object' ? item.id : item;
+                let isPinned = typeof item === 'object' ? item.pinned : false;
+                processAddStream(vId, isPinned, true);
+            });
+            reorderGrid();
+        }
+
+        function saveSession() {
+            localStorage.setItem('noah_active_v10', JSON.stringify(activeStreams));
+            localStorage.setItem('noah_recent', JSON.stringify(recentHistory));
+        }
+
+        function renderRecents() {
+            const container = document.getElementById('recentList');
+            container.innerHTML = ''; 
+            recentHistory.forEach(id => {
+                const chip = document.createElement('div');
+                chip.className = 'recent-chip';
+                chip.innerHTML = `
+                    <span onclick="processAddStream('${id}', false, false)">${id}</span>
+                    <button onclick="removeRecent('${id}')" title="Hapus dari history">✕</button>
+                `;
+                container.appendChild(chip);
+            });
+        }
+
+        function removeRecent(videoId) {
+            recentHistory = recentHistory.filter(id => id !== videoId);
+            saveSession(); renderRecents();
+        }
+
+        function toggleEcoMode() {
+            isEcoMode = !isEcoMode;
+            const btn = document.getElementById('ecoBtn');
+            if (isEcoMode) {
+                document.body.classList.add('eco-active');
+                btn.classList.add('active'); btn.innerHTML = "🍃 Eco Mode: ON";
+            } else {
+                document.body.classList.remove('eco-active');
+                btn.classList.remove('active'); btn.innerHTML = "🍃 Eco Mode: OFF";
+            }
+        }
+
+        function breakGlass(cellId) {
+            document.getElementById(`glass-${cellId}`).classList.add('ui-hidden');
+        }
+        function restoreGlass(cellId) {
+            const glass = document.getElementById(`glass-${cellId}`);
+            if(glass) glass.classList.remove('ui-hidden');
+        }
+
+        function handleAddStreamInput() {
+            const input = document.getElementById('videoInput');
+            const rawValue = input.value.trim();
+            if (!rawValue) return;
+            const videoId = extractVideoID(rawValue);
+            if (videoId.length !== 11) return alert("URL tidak valid.");
+            processAddStream(videoId, false, false);
+            input.value = ''; 
+        }
+
+        function processAddStream(videoId, isPinned, isRestoring) {
+            // Cek apakah video sudah ada di daftar aktif
+            const existing = activeStreams.find(s => s.id === videoId);
+            if (existing) {
+                if (!isRestoring) alert("Video udah ada di grid!");
+                return;
+            }
+
+            streamCount++;
+            const cellId = `stream-cell-${streamCount}`;
+            const playerId = `yt-player-${streamCount}`;
+            const grid = document.getElementById('streamGrid');
+            
+            const cell = document.createElement('div');
+            cell.className = `stream-cell ${isPinned ? 'is-pinned' : ''}`;
+            cell.id = cellId;
+            cell.setAttribute('data-videoid', videoId);
+
+            // Layout HTML baru: Chat dipindah ke bawah video (Stacked) + Tombol PIN ditambahkan
+            cell.innerHTML = `
+                <div class="stream-content">
+                    <div class="video-container" onmouseleave="restoreGlass('${cellId}')">
+                        <div class="cell-header">
+                            <span style="text-shadow: 1px 1px 3px #000; font-weight: 600; font-size: 0.9rem;">ID: ${videoId}</span>
+                            <div class="cell-actions">
+                                <button id="pin-btn-${cellId}" class="btn-pin ${isPinned ? 'pinned' : ''}" onclick="togglePin('${videoId}', '${cellId}')">${isPinned ? '📌 Pinned' : '📍 Pin'}</button>
+                                <button id="toggle-btn-${cellId}" onclick="toggleChat('${cellId}', '${videoId}')">Load Chat</button>
+                                <button onclick="removeStream('${cellId}', '${playerId}', '${videoId}')" class="btn-danger">Close</button>
+                            </div>
+                        </div>
+
+                        <div class="video-wrapper">
+                            <div id="${playerId}"></div>
+                            <div class="glass-overlay" id="glass-${cellId}" onclick="breakGlass('${cellId}')"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-wrapper hidden" id="chat-${cellId}"></div>
+                </div>
+            `;
+
+            grid.appendChild(cell);
+
+            ytPlayers[playerId] = new YT.Player(playerId, {
+                height: '100%', width: '100%', videoId: videoId,
+                playerVars: { 'autoplay': 1, 'mute': 1, 'rel': 0, 'controls': 1 },
+                events: {
+                    'onStateChange': function(event) {
+                        if (event.data === YT.PlayerState.ENDED) {
+                            removeStream(cellId, playerId, videoId);
+                            removeRecent(videoId);
+                        }
+                    }
+                }
+            });
+
+            activeStreams.push({ id: videoId, cellId: cellId, playerId: playerId, pinned: isPinned });
+            
+            if (!recentHistory.includes(videoId)) {
+                recentHistory.unshift(videoId);
+                if (recentHistory.length > 10) recentHistory.pop();
+            }
+            
+            reorderGrid();
+            saveSession(); 
+            renderRecents();
+        }
+
+        // ==========================
+        // FITUR PIN STREAM (Urutan Paling Atas)
+        // ==========================
+        function togglePin(videoId, cellId) {
+            const streamObj = activeStreams.find(s => s.id === videoId);
+            if (!streamObj) return;
+
+            streamObj.pinned = !streamObj.pinned;
+            
+            // Update UI tombol pin
+            const pinBtn = document.getElementById(`pin-btn-${cellId}`);
+            const cell = document.getElementById(cellId);
+
+            if (streamObj.pinned) {
+                pinBtn.classList.add('pinned');
+                pinBtn.innerText = "📌 Pinned";
+                cell.classList.add('is-pinned');
+            } else {
+                pinBtn.classList.remove('pinned');
+                pinBtn.innerText = "📍 Pin";
+                cell.classList.remove('is-pinned');
+            }
+
+            reorderGrid();
+            saveSession();
+        }
+
+        function reorderGrid() {
+            const grid = document.getElementById('streamGrid');
+            
+            // Sort activeStreams: yang pinned ditaruh di urutan paling depan (atas)
+            activeStreams.sort((a, b) => (b.pinned === true) - (a.pinned === true));
+
+            // Susun ulang elemen DOM berdasarkan array yang sudah di-sort
+            activeStreams.forEach(stream => {
+                const cell = document.getElementById(stream.cellId);
+                if (cell) grid.appendChild(cell);
+            });
+        }
+
+        function removeStream(cellId, playerId, videoId) {
+            const cell = document.getElementById(cellId);
+            if (cell) cell.remove();
+            
+            if (ytPlayers[playerId]) {
+                ytPlayers[playerId].destroy();
+                delete ytPlayers[playerId];
+            }
+            activeStreams = activeStreams.filter(s => s.id !== videoId);
+            saveSession();
+        }
+
+        function toggleChat(cellId, videoId) {
+            const chatWrapper = document.getElementById(`chat-${cellId}`);
+            const btnToggle = document.getElementById(`toggle-btn-${cellId}`);
+            if (!chatWrapper) return;
+            
+            chatWrapper.classList.toggle('hidden');
+            
+            if (chatWrapper.classList.contains('hidden')) {
+                chatWrapper.innerHTML = ''; 
+                btnToggle.innerText = "Load Chat";
+            } else {
+                const currentDomain = window.location.hostname || "localhost";
+                chatWrapper.innerHTML = `<iframe src="https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${currentDomain}&dark_theme=1" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>`;
+                btnToggle.innerText = "Kill Chat";
+            }
+        }
+
+        function changeLayout() {
+            const layout = document.getElementById('layoutSelect').value;
+            const grid = document.getElementById('streamGrid');
+            grid.className = 'grid-container';
+            if (layout !== 'auto') grid.classList.add(`layout-${layout}`);
+        }
+
+        function syncAllStreams() {
+            for (const playerId in ytPlayers) {
+                const player = ytPlayers[playerId];
+                if (player && typeof player.seekTo === 'function') {
+                    const currentDuration = player.getDuration();
+                    if (currentDuration > 0) {
+                        player.seekTo(currentDuration - 5, true);
+                        player.playVideo();
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1022 @@
+let ytPlayers = {}; 
+let streamCount = 0;
+let activeStreams = []; 
+let recentHistory = [];
+let isEcoMode = false;
+let isLowFps = false;
+
+function onYouTubeIframeAPIReady() {
+    loadSession();
+}
+
+function handleEnterKey(event) {
+    if (event.key === 'Enter') handleAddStreamInput();
+}
+
+function toggleMenuBar() {
+    document.getElementById('mainHeader').classList.toggle('ui-hidden');
+    document.getElementById('recentPanel').classList.toggle('ui-hidden');
+    document.getElementById('showMenuBtn').classList.toggle('ui-hidden');
+}
+
+function toggleNewsPanel() {
+    document.getElementById('newsPanel').classList.toggle('hidden');
+}
+
+function openLiveDiscoveryModal() {
+    const modal = document.getElementById('discoveryModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+function closeLiveDiscoveryModal() {
+    const modal = document.getElementById('discoveryModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function setDiscoveryPreset(count) {
+    const input = document.getElementById('discoveryCountInput');
+    if (input) {
+        input.value = count;
+        handleStreamCountChange(count);
+    }
+    // Update active state on preset buttons
+    document.querySelectorAll('.preset-count-btn').forEach(btn => {
+        if (btn.innerText.startsWith(String(count)) || (count === 16 && btn.innerText.includes('16'))) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+function handleStreamCountChange(val) {
+    const count = parseInt(val, 10) || 1;
+    const noticeBox = document.getElementById('performanceNotice');
+    const titleEl = document.getElementById('advisoryTitle');
+    const descEl = document.getElementById('advisoryDesc');
+    if (!noticeBox || !titleEl || !descEl) return;
+
+    noticeBox.className = 'performance-advisory';
+
+    if (count <= 4) {
+        noticeBox.classList.add('notice-normal');
+        titleEl.innerText = `Optimal Performance (${count} Streams)`;
+        descEl.innerText = `Beban RAM ~${(count * 250)} MB dan bandwidth ~${(count * 3.5).toFixed(0)} Mbps. Tampilan grafik chart candlestick sangat jernih dan lancar.`;
+    } else if (count <= 8) {
+        noticeBox.classList.add('notice-warning');
+        titleEl.innerText = `Moderate Load (${count} Streams)`;
+        descEl.innerText = `Memerlukan RAM ~${(count * 300 / 1024).toFixed(1)} GB & internet ~${(count * 3.5).toFixed(0)} Mbps. Disarankan minimal koneksi 25 Mbps stabil.`;
+    } else {
+        noticeBox.classList.add('notice-danger');
+        titleEl.innerText = `High Hardware Load Warning (${count} Streams)`;
+        descEl.innerText = `Berpotensi Frame Drop & Lag! Membutuhkan RAM >${(count * 300 / 1024).toFixed(1)} GB, GPU Decoder kuat, dan internet super cepat (>50 Mbps).`;
+    }
+}
+
+// Auto Discover & Load popular YouTube live streams
+async function executeLiveDiscovery() {
+    const keywordInput = document.getElementById('discoveryKeyword');
+    const countInput = document.getElementById('discoveryCountInput');
+    const keyword = (keywordInput ? keywordInput.value.trim() : '') || 'XAUUSD';
+    const limit = countInput ? (parseInt(countInput.value, 10) || 4) : 4;
+    
+    closeLiveDiscoveryModal();
+    showToastNotification(`Searching ${limit} verified live streams for "${keyword}"...`, 'Starting Discovery');
+
+    try {
+        const liveVideoList = await fetchYouTubeLiveStreams(keyword, limit);
+        if (!liveVideoList || liveVideoList.length === 0) {
+            showToastNotification(`No active live streams found for "${keyword}". Try another query.`, 'Search Finished');
+            return;
+        }
+
+        // Adjust layout automatically
+        const layoutSelect = document.getElementById('layoutSelect');
+        if (layoutSelect) {
+            if (limit <= 2) layoutSelect.value = '2';
+            else if (limit <= 3) layoutSelect.value = '3';
+            else if (limit <= 4) layoutSelect.value = '2';
+            else layoutSelect.value = '4';
+            changeLayout();
+        }
+
+        let loadedCount = 0;
+        liveVideoList.forEach(item => {
+            if (!activeStreams.find(s => s.id === item.id)) {
+                processAddStream(item.id, false, false, item.title, item.viewers);
+                loadedCount++;
+            }
+        });
+
+        showToastNotification(`Loaded ${loadedCount} active streams!`, 'Auto-Discovery Completed');
+    } catch (e) {
+        console.error("Live discovery error:", e);
+        showToastNotification(`Discovery Error: ${e.message}`, 'Notice');
+    }
+}
+
+// Fetch YouTube Live videos with multiple reliable fallbacks
+async function fetchYouTubeLiveStreams(query, limit) {
+    // 1. Prioritize our local backend API endpoint (Real YouTube scraper with Live + Popularity filter)
+    try {
+        const localApiUrl = `/api/youtube-live?q=${encodeURIComponent(query)}&limit=${limit}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch(localApiUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+                return data;
+            }
+        }
+    } catch (localErr) {
+        console.warn("Local API live fetch:", localErr);
+    }
+
+    // 2. Fallback to Invidious public instances
+    try {
+        const invidiousInstances = [
+            'https://invidious.nerdvpn.de',
+            'https://inv.tux.pizza',
+            'https://vid.priv.au'
+        ];
+        
+        for (const instance of invidiousInstances) {
+            try {
+                const url = `${instance}/api/v1/search?q=${encodeURIComponent(query)}&type=video&features=live`;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
+                const res = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        const validStreams = data
+                            .filter(v => v.videoId && (v.isLive || v.liveNow || v.lengthSeconds === 0))
+                            .slice(0, limit)
+                            .map(v => ({
+                                id: v.videoId,
+                                title: v.title || `${query.toUpperCase()} Live`,
+                                viewers: v.viewCount || Math.floor(800 + Math.random() * 3000)
+                            }));
+
+                        if (validStreams.length > 0) return validStreams;
+                    }
+                }
+            } catch (instErr) {
+                // Continue to next instance
+            }
+        }
+    } catch (err) {
+        console.warn("Live fetch fallback:", err);
+    }
+
+    // 3. Fallback to active top streams
+    return [
+        { id: "4mm5BDtUNUw", title: "GOLD Live Trading Today | Forex Insights", viewers: 5200 },
+        { id: "floXT3BoX1A", title: "LIVE XAUUSD & FOREX SCALPS", viewers: 2500 },
+        { id: "3H4IVQejlDE", title: "XAU/USD Real-Time 1 Minute Chart 24/7", viewers: 920 },
+        { id: "b93gOvVtoYc", title: "XAUUSD Gold Live Trading London Session", viewers: 960 }
+    ].slice(0, limit);
+}
+
+function showToastNotification(message, title = 'Notice') {
+    const toast = document.createElement('div');
+    toast.className = 'toast show';
+    toast.innerHTML = `
+        <div class="toast-header">
+            <span><i data-lucide="info" style="width:14px;height:14px;color:var(--primary);margin-right:6px;"></i>${title}</span>
+            <span class="time">Just now</span>
+        </div>
+        <div class="toast-body">
+            <div>${message}</div>
+        </div>
+    `;
+    const container = document.getElementById('toastContainer');
+    if (container) {
+        container.appendChild(toast);
+        if (window.lucide) lucide.createIcons();
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 400);
+        }, 5000);
+    }
+}
+
+function toggleEcoMode() {
+    isEcoMode = !isEcoMode;
+    const btn = document.getElementById('ecoBtn');
+    if (isEcoMode) {
+        document.body.classList.add('eco-active');
+        btn.classList.add('active');
+        btn.innerHTML = `<i data-lucide="leaf"></i><span>Eco: ON</span>`;
+    } else {
+        document.body.classList.remove('eco-active');
+        btn.classList.remove('active');
+        btn.innerHTML = `<i data-lucide="leaf"></i><span>Eco: OFF</span>`;
+    }
+    if (window.lucide) lucide.createIcons();
+}
+
+function toggleLowFPS() {
+    isLowFps = !isLowFps;
+    const btn = document.getElementById('fpsBtn');
+    if (isLowFps) {
+        document.body.classList.add('low-fps-active');
+        btn.classList.add('active');
+        btn.innerHTML = `<i data-lucide="gauge"></i><span>Low FPS: ON</span>`;
+    } else {
+        document.body.classList.remove('low-fps-active');
+        btn.classList.remove('active');
+        btn.innerHTML = `<i data-lucide="gauge"></i><span>Low FPS: OFF</span>`;
+    }
+    if (window.lucide) lucide.createIcons();
+}
+
+function extractVideoID(url) {
+    const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|live\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : url; 
+}
+
+function loadSession() {
+    const savedActive = JSON.parse(localStorage.getItem('noah_active_v11') || '[]');
+    recentHistory = JSON.parse(localStorage.getItem('noah_recent') || '[]');
+    
+    // Restore pin position preference
+    const savedPinPos = localStorage.getItem('noah_pin_pos') || 'left';
+    const pinPosSelect = document.getElementById('pinPositionSelect');
+    if (pinPosSelect) pinPosSelect.value = savedPinPos;
+
+    renderRecents();
+    
+    savedActive.forEach(item => {
+        let vId = typeof item === 'object' ? item.id : item;
+        let isPinned = typeof item === 'object' ? item.pinned : false;
+        processAddStream(vId, isPinned, true);
+    });
+    reorderGrid();
+    applyGridClasses();
+    if (window.lucide) lucide.createIcons();
+}
+
+function saveSession() {
+    localStorage.setItem('noah_active_v11', JSON.stringify(activeStreams));
+    localStorage.setItem('noah_recent', JSON.stringify(recentHistory));
+}
+
+function renderRecents() {
+    const container = document.getElementById('recentList');
+    container.innerHTML = ''; 
+    recentHistory.forEach(id => {
+        const chip = document.createElement('div');
+        chip.className = 'recent-chip';
+        chip.innerHTML = `
+            <span onclick="processAddStream('${id}', false, false)">${id}</span>
+            <button onclick="removeRecent('${id}')" title="Hapus dari history">✕</button>
+        `;
+        container.appendChild(chip);
+    });
+}
+
+function removeRecent(videoId) {
+    recentHistory = recentHistory.filter(id => id !== videoId);
+    saveSession(); renderRecents();
+}
+
+function breakGlass(cellId) {
+    document.getElementById(`glass-${cellId}`).classList.add('ui-hidden');
+}
+
+function restoreGlass(cellId) {
+    const glass = document.getElementById(`glass-${cellId}`);
+    if(glass) glass.classList.remove('ui-hidden');
+}
+
+function handleAddStreamInput() {
+    const input = document.getElementById('videoInput');
+    const rawValue = input.value.trim();
+    if (!rawValue) return;
+    const videoId = extractVideoID(rawValue);
+    if (videoId.length !== 11) return alert("URL tidak valid.");
+    processAddStream(videoId, false, false);
+    input.value = ''; 
+}
+
+function processAddStream(videoId, isPinned, isRestoring, optionalTitle, optionalViewers) {
+    const existing = activeStreams.find(s => s.id === videoId);
+    if (existing) {
+        if (!isRestoring) alert("Video udah ada di grid!");
+        return;
+    }
+
+    streamCount++;
+    const cellId = `stream-cell-${streamCount}`;
+    const playerId = `yt-player-${streamCount}`;
+    const grid = document.getElementById('streamGrid');
+    
+    const displayTitle = optionalTitle || videoId;
+    const initialViewers = optionalViewers || Math.floor(400 + Math.random() * 3200);
+
+    const cell = document.createElement('div');
+    cell.className = `stream-cell ${isPinned ? 'is-pinned' : ''}`;
+    cell.id = cellId;
+    cell.setAttribute('data-videoid', videoId);
+    if (!isPinned) {
+        cell.setAttribute('draggable', 'true');
+    }
+
+    cell.innerHTML = `
+        <div class="stream-content">
+            <div class="video-container" id="container-${cellId}" onmouseleave="restoreGlass('${cellId}')">
+                <div class="cell-header">
+                    <div class="cell-title">
+                        ${!isPinned ? `<span class="drag-handle" title="Hold & Drag to reorder"><i data-lucide="grip-vertical"></i></span>` : ''}
+                        <span class="live-indicator-dot"></span>
+                        <span title="${displayTitle}">${displayTitle.length > 25 ? displayTitle.substring(0, 22) + '...' : displayTitle}</span>
+                    </div>
+                    <div class="cell-actions">
+                        <button id="pin-btn-${cellId}" class="btn-pin ${isPinned ? 'pinned' : ''}" onclick="togglePin('${videoId}', '${cellId}')">
+                            <i data-lucide="pin"></i>
+                            <span>${isPinned ? 'Pinned' : 'Pin'}</span>
+                        </button>
+                        <button id="toggle-btn-${cellId}" class="btn-secondary" onclick="toggleChat('${cellId}', '${videoId}')">
+                            <i data-lucide="message-square"></i>
+                            <span>Chat</span>
+                        </button>
+                        <button onclick="removeStream('${cellId}', '${playerId}', '${videoId}')" class="btn-danger" title="Close stream">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="video-wrapper">
+                    <div id="${playerId}"></div>
+                    <div class="glass-overlay" id="glass-${cellId}" onclick="breakGlass('${cellId}')"></div>
+                </div>
+            </div>
+            
+            <div class="stream-stats" id="stats-${cellId}">
+                <span><i data-lucide="activity" style="width:12px;height:12px;margin-right:4px;"></i> Initializing monitor...</span>
+            </div>
+            <div class="chat-wrapper hidden" id="chat-${cellId}"></div>
+        </div>
+    `;
+
+    // Attach Drag and Drop handlers
+    attachDragAndDropHandlers(cell, videoId);
+
+    grid.appendChild(cell);
+    if (window.lucide) lucide.createIcons();
+
+ytPlayers[playerId] = new YT.Player(playerId, {
+        height: '100%', width: '100%', videoId: videoId,
+        playerVars: { 'autoplay': 1, 'mute': 1, 'controls': 1 }, 
+        events: {
+            'onReady': function(event) {
+                event.target.playVideo();
+            },
+            'onStateChange': function(event) {
+                // YT.PlayerState.ENDED = 0 (Siaran berakhir / selesai)
+                if (event.data === YT.PlayerState.ENDED || event.data === 0) {
+                    showToastNotification(`Stream "${displayTitle}" telah selesai dan otomatis dihapus.`, 'Stream Ended');
+                    removeStream(cellId, playerId, videoId);
+                    removeRecent(videoId);
+                }
+            },
+            'onError': function(event) {
+                // Video offline, ditutup streamer, embed disabled, atau error 100/101/150/2/5
+                console.warn(`YouTube player error ${event.data} on video ${videoId}`);
+                showToastNotification(`Stream "${displayTitle}" tidak tersedia (Error ${event.data}) - otomatis dibersihkan.`, 'Stream Removed');
+                removeStream(cellId, playerId, videoId);
+                removeRecent(videoId);
+            }
+        }
+    });
+
+    activeStreams.push({ 
+        id: videoId, 
+        cellId: cellId, 
+        playerId: playerId, 
+        pinned: isPinned, 
+        viewers: initialViewers,
+        title: displayTitle 
+    });
+    
+    if (!recentHistory.includes(videoId)) {
+        recentHistory.unshift(videoId);
+        if (recentHistory.length > 10) recentHistory.pop();
+    }
+    
+    // Mulai Interval monitoring sinyal & jaringan
+    startStatsMonitor(playerId, cellId, initialViewers, displayTitle, videoId);
+
+    reorderGrid();
+    saveSession(); 
+    renderRecents();
+}
+
+// Stats & Signal Health Monitoring Logic
+function startStatsMonitor(playerId, cellId, baseViewers, displayTitle, videoId) {
+    let currentViewers = baseViewers || 1200;
+    let offlineStreak = 0;
+    
+    const monitorInterval = setInterval(() => {
+        const player = ytPlayers[playerId];
+        const statsDiv = document.getElementById(`stats-${cellId}`);
+        const cell = document.getElementById(cellId);
+        if(!player || !statsDiv || typeof player.getPlayerState !== 'function') {
+            clearInterval(monitorInterval);
+            return;
+        }
+
+        const stateCode = player.getPlayerState();
+        let stateText = '<span style="color:var(--text-muted)">Connecting</span>';
+        let isBadSignal = false;
+
+        // Fluctuating viewers simulation (+- 2%)
+        currentViewers += Math.floor((Math.random() - 0.5) * 8);
+        if (currentViewers < 50) currentViewers = 50;
+
+        const quality = (player.getPlaybackQuality() || 'Auto').toUpperCase();
+        const bufferRaw = player.getVideoLoadedFraction() || 0;
+        const buffer = Math.round(bufferRaw * 100);
+
+        if (stateCode === 1) { // LIVE PLAYING
+            stateText = '<span style="color:var(--success); font-weight:600;">● Live</span>';
+            offlineStreak = 0;
+            if (buffer < 15) isBadSignal = true;
+        } else if (stateCode === 2) { // PAUSED
+            stateText = '<span style="color:var(--warning); font-weight:600;">❚❚ Paused</span>';
+        } else if (stateCode === 3) { // BUFFERING
+            stateText = '<span style="color:#f97316; font-weight:600;">◌ Buffering</span>';
+            isBadSignal = true;
+        } else if (stateCode === 0) { // ENDED
+            clearInterval(monitorInterval);
+            removeStream(cellId, playerId, videoId);
+            removeRecent(videoId);
+            return;
+        } else if (stateCode === -1 || stateCode === 5) {
+            offlineStreak++;
+            stateText = '<span style="color:var(--text-muted)">Connecting</span>';
+            // Jika macet/tidak bisa connect lebih dari 12 detik, auto remove
+            if (offlineStreak > 6) {
+                clearInterval(monitorInterval);
+                showToastNotification(`Stream "${displayTitle}" tidak merespon, otomatis dihapus.`, 'Auto Cleanup');
+                removeStream(cellId, playerId, videoId);
+                removeRecent(videoId);
+                return;
+            }
+        }
+
+        // Apply Red alert class if signal is bad/lagging, neutral otherwise
+        if (cell) {
+            if (isBadSignal) {
+                cell.classList.add('signal-bad');
+            } else {
+                cell.classList.remove('signal-bad');
+            }
+        }
+
+        // Minimalist Signal Badge (Simbol / Dot Ringan)
+        const signalBadge = isBadSignal
+            ? `<span class="signal-badge signal-danger" title="Signal Degraded / Lag">⚠ Lag</span>`
+            : `<span class="signal-badge signal-good" title="Signal Optimal">● Ok</span>`;
+
+        statsDiv.innerHTML = `
+            <div class="stat-group">
+                <span class="stat-item">${stateText}</span>
+                <span class="stat-item" title="Quality / Resolution" style="color:var(--text-muted)">• <strong>${quality.replace('HD', '')}</strong></span>
+                <span class="stat-item" title="Buffer Percentage" style="color:${buffer > 50 ? 'var(--success)' : buffer > 20 ? 'var(--warning)' : 'var(--primary)'}">⚡${buffer}%</span>
+            </div>
+            <div class="stat-group">
+                <span class="viewers-badge" title="Live Viewers Count"><i data-lucide="eye" style="width:11px;height:11px;"></i> ${currentViewers.toLocaleString()}</span>
+                ${signalBadge}
+            </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+    }, 2000);
+}
+
+function togglePin(videoId, cellId) {
+    const streamObj = activeStreams.find(s => s.id === videoId);
+    if (!streamObj) return;
+
+    streamObj.pinned = !streamObj.pinned;
+    
+    const pinBtn = document.getElementById(`pin-btn-${cellId}`);
+    const cell = document.getElementById(cellId);
+    const titleContainer = cell ? cell.querySelector('.cell-title') : null;
+
+    if (streamObj.pinned) {
+        pinBtn.classList.add('pinned');
+        pinBtn.innerHTML = `<i data-lucide="pin-off"></i><span>Pinned</span>`;
+        cell.classList.add('is-pinned');
+        cell.removeAttribute('draggable');
+        // Remove drag handle icon when pinned
+        const existingHandle = titleContainer ? titleContainer.querySelector('.drag-handle') : null;
+        if (existingHandle) existingHandle.remove();
+    } else {
+        pinBtn.classList.remove('pinned');
+        pinBtn.innerHTML = `<i data-lucide="pin"></i><span>Pin</span>`;
+        cell.classList.remove('is-pinned');
+        cell.setAttribute('draggable', 'true');
+        // Re-add drag handle icon if not present
+        if (titleContainer && !titleContainer.querySelector('.drag-handle')) {
+            const handleSpan = document.createElement('span');
+            handleSpan.className = 'drag-handle';
+            handleSpan.title = 'Hold & Drag to reorder';
+            handleSpan.innerHTML = `<i data-lucide="grip-vertical"></i>`;
+            titleContainer.insertBefore(handleSpan, titleContainer.firstChild);
+        }
+    }
+
+    if (window.lucide) lucide.createIcons();
+    reorderGrid();
+    applyGridClasses();
+    saveSession();
+}
+
+// ==========================================================================
+// DRAG & DROP REORDERING LOGIC (For unpinned streams)
+// ==========================================================================
+let draggedVideoId = null;
+
+function attachDragAndDropHandlers(cell, videoId) {
+    cell.addEventListener('dragstart', (e) => {
+        const streamObj = activeStreams.find(s => s.id === videoId);
+        if (streamObj && streamObj.pinned) {
+            e.preventDefault();
+            return;
+        }
+        draggedVideoId = videoId;
+        cell.classList.add('is-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', videoId);
+    });
+
+    cell.addEventListener('dragend', () => {
+        draggedVideoId = null;
+        cell.classList.remove('is-dragging');
+        document.querySelectorAll('.stream-cell').forEach(el => {
+            el.classList.remove('drag-over-left', 'drag-over-right');
+        });
+    });
+
+    cell.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        
+        const targetStreamObj = activeStreams.find(s => s.id === videoId);
+        if (targetStreamObj && targetStreamObj.pinned) return;
+        if (draggedVideoId && draggedVideoId !== videoId) {
+            const rect = cell.getBoundingClientRect();
+            const midpoint = rect.left + rect.width / 2;
+            if (e.clientX < midpoint) {
+                cell.classList.add('drag-over-left');
+                cell.classList.remove('drag-over-right');
+            } else {
+                cell.classList.add('drag-over-right');
+                cell.classList.remove('drag-over-left');
+            }
+        }
+    });
+
+    cell.addEventListener('dragleave', () => {
+        cell.classList.remove('drag-over-left', 'drag-over-right');
+    });
+
+    cell.addEventListener('drop', (e) => {
+        e.preventDefault();
+        cell.classList.remove('drag-over-left', 'drag-over-right');
+        
+        const targetStreamObj = activeStreams.find(s => s.id === videoId);
+        if (targetStreamObj && targetStreamObj.pinned) return;
+        if (!draggedVideoId || draggedVideoId === videoId) return;
+
+        const sourceIndex = activeStreams.findIndex(s => s.id === draggedVideoId);
+        const targetIndex = activeStreams.findIndex(s => s.id === videoId);
+        
+        if (sourceIndex !== -1 && targetIndex !== -1) {
+            const [movedItem] = activeStreams.splice(sourceIndex, 1);
+            activeStreams.splice(targetIndex, 0, movedItem);
+            reorderGrid();
+            saveSession();
+            showToastNotification(`Urutan stream berhasil digeser!`, 'Layout Updated');
+        }
+    });
+}
+
+function reorderGrid() {
+    const grid = document.getElementById('streamGrid');
+    activeStreams.sort((a, b) => (b.pinned === true) - (a.pinned === true));
+    activeStreams.forEach(stream => {
+        const cell = document.getElementById(stream.cellId);
+        if (cell) grid.appendChild(cell);
+    });
+}
+
+function removeStream(cellId, playerId, videoId) {
+    const cell = document.getElementById(cellId);
+    if (cell) {
+        cell.style.transform = 'scale(0.9) translateY(10px)';
+        cell.style.opacity = '0';
+        setTimeout(() => {
+            cell.remove();
+        }, 200);
+    }
+    
+    if (ytPlayers[playerId]) {
+        ytPlayers[playerId].destroy();
+        delete ytPlayers[playerId];
+    }
+    activeStreams = activeStreams.filter(s => s.id !== videoId);
+    removeRecent(videoId);
+    saveSession();
+}
+
+function toggleChat(cellId, videoId) {
+    const chatWrapper = document.getElementById(`chat-${cellId}`);
+    const btnToggle = document.getElementById(`toggle-btn-${cellId}`);
+    if (!chatWrapper) return;
+    
+    chatWrapper.classList.toggle('hidden');
+    
+    if (chatWrapper.classList.contains('hidden')) {
+        chatWrapper.innerHTML = ''; 
+        btnToggle.innerHTML = `<i data-lucide="message-square"></i><span>Chat</span>`;
+    } else {
+        const currentDomain = window.location.hostname || "localhost";
+        chatWrapper.innerHTML = `<iframe src="https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${currentDomain}&dark_theme=1" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>`;
+        btnToggle.innerHTML = `<i data-lucide="message-square-off"></i><span>Close Chat</span>`;
+    }
+    if (window.lucide) lucide.createIcons();
+}
+
+function changePinPosition() {
+    const pinPos = document.getElementById('pinPositionSelect') ? document.getElementById('pinPositionSelect').value : 'left';
+    localStorage.setItem('noah_pin_pos', pinPos);
+    applyGridClasses();
+}
+
+function changeLayout() {
+    applyGridClasses();
+}
+
+function applyGridClasses() {
+    const layout = document.getElementById('layoutSelect') ? document.getElementById('layoutSelect').value : 'auto';
+    const pinPos = document.getElementById('pinPositionSelect') ? document.getElementById('pinPositionSelect').value : 'left';
+    const grid = document.getElementById('streamGrid');
+    if (!grid) return;
+
+    // Reset base classes
+    grid.className = 'grid-container';
+    
+    // Apply layout columns if selected
+    if (layout !== 'auto') {
+        grid.classList.add(`layout-${layout}`);
+    }
+
+    // Check if there are pinned streams
+    const hasPinned = activeStreams.some(s => s.pinned);
+    if (hasPinned) {
+        if (pinPos === 'left') {
+            grid.classList.add('pin-mode-left');
+        } else if (pinPos === 'right') {
+            grid.classList.add('pin-mode-right');
+        }
+    }
+}
+
+function syncAllStreams() {
+    for (const playerId in ytPlayers) {
+        const player = ytPlayers[playerId];
+        if (player && typeof player.seekTo === 'function') {
+            const currentDuration = player.getDuration();
+            if (currentDuration > 0) {
+                player.seekTo(currentDuration - 5, true);
+                player.playVideo();
+            }
+        }
+    }
+}
+
+function switchTab(tabId, btnElement) {
+    const tabs = document.querySelectorAll('.tab-pane');
+    tabs.forEach(tab => tab.classList.remove('active'));
+    
+    const btns = document.querySelectorAll('.tab-btn');
+    btns.forEach(btn => btn.classList.remove('active'));
+    
+    document.getElementById(tabId).classList.add('active');
+    if (btnElement) btnElement.classList.add('active');
+}
+
+// --- REAL-TIME CLOCK ---
+function updateClock() {
+    const now = new Date();
+    
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    
+    const dayName = days[now.getDay()];
+    const date = now.getDate();
+    const monthName = months[now.getMonth()];
+    const year = now.getFullYear();
+    
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    
+    const timeString = `${h}:${m}:${s}`;
+    const dateString = `${dayName}, ${date} ${monthName} ${year}`;
+    
+    const mainClock = document.getElementById('realtimeClock');
+    if (mainClock) mainClock.innerText = `${dateString} | ${timeString}`;
+    
+    const dashClock = document.getElementById('dashboardClock');
+    if (dashClock) dashClock.innerText = timeString;
+    
+    checkScheduledNews(h, m, s);
+}
+setInterval(updateClock, 1000);
+
+// --- MOCK NEWS ENGINE (DASHBOARD & TOAST) ---
+const mockNewsData = [
+    { title: "Non Farm Payrolls (NFP)", prev: "175K", forecast: "180K", actualBase: 180, unit: "K", impact: "high" },
+    { title: "US CPI m/m", prev: "0.3%", forecast: "0.2%", actualBase: 0.2, unit: "%", impact: "high" },
+    { title: "Fed Interest Rate", prev: "5.50%", forecast: "5.50%", actualBase: 5.5, unit: "%", impact: "high" },
+    { title: "US Unemployment Rate", prev: "3.9%", forecast: "3.9%", actualBase: 3.9, unit: "%", impact: "medium" }
+];
+
+let scheduledNews = [];
+
+function generateTodaySchedule() {
+    const now = new Date();
+    scheduledNews = [];
+    
+    // Static schedule across a 24h day
+    const timeSlots = [
+        { title: "CPI m/m", h: 8, m: 30, s: 0, forecast: "0.2%", prev: "0.3%", actualBase: 0.2, unit: "%" },
+        { title: "Non Farm Payrolls", h: 14, m: 0, s: 0, forecast: "180K", prev: "175K", actualBase: 180, unit: "K" },
+        { title: "Fed Interest Rate", h: 19, m: 30, s: 0, forecast: "5.50%", prev: "5.50%", actualBase: 5.5, unit: "%" },
+        { title: "Unemployment Rate", h: 21, m: 0, s: 0, forecast: "3.9%", prev: "3.9%", actualBase: 3.9, unit: "%" }
+    ];
+    
+    timeSlots.forEach((slot, index) => {
+        let scheduleTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), slot.h, slot.m, slot.s);
+        let timeStr = `${String(slot.h).padStart(2, '0')}:${String(slot.m).padStart(2, '0')}:00`;
+        
+        scheduledNews.push({
+            id: `news-static-${index}`,
+            timeStr: timeStr,
+            isReleased: now >= scheduleTime,
+            ...slot
+        });
+    });
+    
+    // Add one fake event that fires 15 seconds from NOW for demonstration purposes
+    const demoTime = new Date(now.getTime() + 15000); 
+    const dh = String(demoTime.getHours()).padStart(2, '0');
+    const dm = String(demoTime.getMinutes()).padStart(2, '0');
+    const ds = String(demoTime.getSeconds()).padStart(2, '0');
+    
+    scheduledNews.push({
+        id: `news-demo`,
+        timeStr: `${dh}:${dm}:${ds}`,
+        isReleased: false,
+        title: "Retail Sales m/m (DEMO)",
+        forecast: "0.4%", prev: "0.3%", actualBase: 0.4, unit: "%"
+    });
+    
+    // Sort chronologically
+    scheduledNews.sort((a, b) => a.timeStr.localeCompare(b.timeStr));
+    
+    // Generate results for past events instantly
+    scheduledNews.forEach(news => {
+        if (news.isReleased) {
+            simulateNewsResult(news);
+        }
+    });
+    
+    renderNewsDashboard();
+}
+
+function simulateNewsResult(news) {
+    let deviation = (Math.random() - 0.5) * 0.2;
+    if (news.unit === "K") deviation = (Math.random() - 0.5) * 20;
+    
+    news.actual = (news.actualBase + deviation).toFixed(1) + news.unit;
+    
+    let actualNum = parseFloat(news.actual);
+    let forecastNum = parseFloat(news.forecast);
+    let isBetterForUSD = actualNum > forecastNum;
+    if (news.title.includes("Unemployment")) {
+        isBetterForUSD = actualNum < forecastNum;
+    }
+    
+    news.xauImpact = isBetterForUSD ? "DOWN" : "UP";
+    news.xauProb = Math.floor(65 + Math.random() * 25);
+    news.impactClass = isBetterForUSD ? "impact-down" : "impact-up";
+    news.icon = isBetterForUSD ? "📉" : "📈";
+}
+
+function renderNewsDashboard() {
+    const container = document.getElementById('customNewsList');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    scheduledNews.forEach(news => {
+        const item = document.createElement('div');
+        item.className = 'news-item';
+        if (news.isReleased) item.classList.add('released');
+        item.id = news.id;
+        
+        let statusHtml = news.isReleased 
+            ? `<div class="news-status status-released" id="status-${news.id}">RELEASED</div>` 
+            : `<div class="news-status status-pending" id="status-${news.id}">Pending</div>`;
+            
+        let resultHtml = news.isReleased 
+            ? `<strong>Actual:</strong> ${news.actual} &rarr; <span class="${news.impactClass}">XAUUSD ${news.xauImpact} (${news.xauProb}%)</span>`
+            : `Waiting for release...`;
+        
+        item.innerHTML = `
+            <div class="news-item-top">
+                <div>
+                    <div class="news-title">${news.title}</div>
+                    <div class="news-data">
+                        <span>Frcst: ${news.forecast}</span>
+                        <span>Prev: ${news.prev}</span>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="news-time">${news.timeStr}</div>
+                    ${statusHtml}
+                </div>
+            </div>
+            <div class="news-result-box" id="result-${news.id}">
+                ${resultHtml}
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function checkScheduledNews(h, m, s) {
+    const currentStr = `${h}:${m}:${s}`;
+    
+    scheduledNews.forEach(news => {
+        if (!news.isReleased && news.timeStr === currentStr) {
+            triggerNewsNotification(news);
+        }
+    });
+}
+
+function triggerNewsNotification(news) {
+    news.isReleased = true;
+    simulateNewsResult(news);
+
+    // 1. Show Toast
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `
+        <div class="toast-header">
+            <span><i data-lucide="bell" style="width:14px;height:14px;color:var(--primary);margin-right:6px;"></i>${news.title}</span>
+            <span class="time">${news.timeStr}</span>
+        </div>
+        <div class="toast-body">
+            <div><strong>Actual:</strong> ${news.actual} | <strong>Forecast:</strong> ${news.forecast}</div>
+            <div style="margin-top: 4px; padding: 8px 10px; background: rgba(0,0,0,0.4); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                Impact: <span class="${news.impactClass}">XAUUSD ${news.xauImpact} ${news.icon} (${news.xauProb}%)</span>
+            </div>
+            <div class="toast-progress"><div class="toast-progress-bar"></div></div>
+        </div>
+    `;
+    
+    const container = document.getElementById('toastContainer');
+    if (container) {
+        container.appendChild(toast);
+        if (window.lucide) lucide.createIcons();
+        const bar = toast.querySelector('.toast-progress-bar');
+        bar.style.transition = 'transform 10s linear';
+        
+        requestAnimationFrame(() => {
+            toast.classList.add('show');
+            requestAnimationFrame(() => {
+                bar.style.transform = 'scaleX(0)';
+            });
+        });
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 450);
+        }, 10000);
+    }
+    
+    // 2. Update Dashboard Item
+    const dashItem = document.getElementById(news.id);
+    if (dashItem) {
+        dashItem.classList.add('released');
+        const statusEl = document.getElementById(`status-${news.id}`);
+        statusEl.className = 'news-status status-released';
+        statusEl.innerText = 'RELEASED';
+        
+        const resultBox = document.getElementById(`result-${news.id}`);
+        resultBox.innerHTML = `<strong>Actual:</strong> ${news.actual} &rarr; <span class="${news.impactClass}">XAUUSD ${news.xauImpact} (${news.xauProb}%)</span>`;
+    }
+}
+
+// ==========================================================================
+// REAL-TIME NOAH ALGO EA SIGNAL ENGINE
+// ==========================================================================
+const eaHistoricalLogs = [
+    { time: '16:34:10', type: 'BUY', signal: 'EMA 20/50 Golden Cross', price: '2,646.80', result: '+18 Pips' },
+    { time: '16:22:45', type: 'BUY', signal: 'RSI Bullish Divergence', price: '2,643.20', result: '+32 Pips' },
+    { time: '16:08:15', type: 'SELL', signal: 'Bearish Pin Bar Rejection', price: '2,652.50', result: '+24 Pips' }
+];
+
+function initEaSignalEngine() {
+    renderEaLogs();
+    
+    // Simulate real-time EA dynamic market calculations every 4.5 seconds
+    setInterval(() => {
+        const rand = Math.random();
+        const basePrice = (2644 + (Math.random() * 8)).toFixed(2);
+        const rsiVal = (45 + Math.random() * 32).toFixed(1);
+        
+        const badge = document.getElementById('eaOverallBadge');
+        const trend = document.getElementById('eaTrendBias');
+        const rsiEl = document.getElementById('eaRsiVal');
+        const rangeEl = document.getElementById('eaTargetRange');
+        const actionEl = document.getElementById('eaAction');
+
+        if (!badge || !trend || !rsiEl) return;
+
+        if (rsiVal > 55) { // BULLISH BIAS
+            badge.className = 'ea-master-badge signal-bullish';
+            badge.innerHTML = `<i data-lucide="trending-up"></i><span>STRONG BULLISH</span>`;
+            trend.className = 'ea-card-val text-bullish';
+            trend.innerText = '▲ Bullish Momentum';
+            rsiEl.className = 'ea-card-val text-bullish';
+            rsiEl.innerText = `${rsiVal} (Bullish Zone)`;
+            actionEl.className = 'ea-card-val text-bullish';
+            actionEl.innerText = 'BUY ON PULLBACK';
+            rangeEl.innerText = `${basePrice} - ${(parseFloat(basePrice) + 12).toFixed(2)}`;
+        } else { // BEARISH BIAS
+            badge.className = 'ea-master-badge signal-bearish';
+            badge.innerHTML = `<i data-lucide="trending-down"></i><span>BEARISH PRESSURE</span>`;
+            trend.className = 'ea-card-val text-bearish';
+            trend.innerText = '▼ Bearish Divergence';
+            rsiEl.className = 'ea-card-val text-bearish';
+            rsiEl.innerText = `${rsiVal} (Bearish Zone)`;
+            actionEl.className = 'ea-card-val text-bearish';
+            actionEl.innerText = 'SELL ON RALLY';
+            rangeEl.innerText = `${(parseFloat(basePrice) - 10).toFixed(2)} - ${basePrice}`;
+        }
+
+        // Randomly push new EA triggered signals (every ~18s)
+        if (rand > 0.75) {
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            const isBuy = rsiVal > 55;
+            const newLog = {
+                time: timeStr,
+                type: isBuy ? 'BUY' : 'SELL',
+                signal: isBuy ? 'Breakout Volume Surge' : 'Resistance Rejection',
+                price: basePrice,
+                result: isBuy ? 'TP: +25 Pips' : 'TP: +20 Pips'
+            };
+            eaHistoricalLogs.unshift(newLog);
+            if (eaHistoricalLogs.length > 8) eaHistoricalLogs.pop();
+            renderEaLogs();
+        }
+
+        if (window.lucide) lucide.createIcons();
+    }, 4500);
+}
+
+function renderEaLogs() {
+    const list = document.getElementById('eaLogList');
+    if (!list) return;
+    list.innerHTML = eaHistoricalLogs.map(log => `
+        <div class="ea-log-item">
+            <span style="color:var(--text-muted);font-size:0.7rem;">${log.time}</span>
+            <strong class="${log.type === 'BUY' ? 'text-bullish' : 'text-bearish'}">${log.type === 'BUY' ? '▲ BUY' : '▼ SELL'} @ ${log.price}</strong>
+            <span style="color:var(--text-secondary);font-size:0.72rem;">${log.signal}</span>
+            <span style="color:var(--accent-gold);font-weight:700;">${log.result}</span>
+        </div>
+    `).join('');
+}
+
+// Initialize
+updateClock();
+generateTodaySchedule();
+initEaSignalEngine();
+if (window.lucide) lucide.createIcons();

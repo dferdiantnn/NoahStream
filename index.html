@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noah Stream - Pro Multi-Stream & Trading Hub</title>
+    <!-- Modern Typography: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <button id="showMenuBtn" class="floating-menu-btn ui-hidden" onclick="toggleMenuBar()">
+        <i data-lucide="menu"></i>
+        <span>Show Menu</span>
+    </button>
+
+    <header id="mainHeader">
+        <div class="brand-container">
+            <div class="brand">
+                <img src="logo.png" alt="FERR NOAH.ID" class="brand-logo-img" />
+                <span>Noah <strong>Stream</strong></span>
+            </div>
+            <div id="realtimeClock" class="clock">Loading Time...</div>
+        </div>
+        <div class="controls">
+            <div class="input-wrapper">
+                <i data-lucide="search" class="input-icon"></i>
+                <input type="text" id="videoInput" placeholder="Paste YouTube URL or Video ID..." onkeypress="handleEnterKey(event)" />
+            </div>
+            <button class="btn-primary" onclick="handleAddStreamInput()">
+                <i data-lucide="plus"></i>
+                <span>Add Stream</span>
+            </button>
+            <span class="divider"></span>
+            <div class="select-wrapper">
+                <select id="layoutSelect" onchange="changeLayout()">
+                    <option value="auto">Auto Columns</option>
+                    <option value="1">1 Column</option>
+                    <option value="2">2 Columns</option>
+                    <option value="3">3 Columns</option>
+                    <option value="4">4 Columns</option>
+                </select>
+            </div>
+            <div class="select-wrapper" id="pinPositionWrapper" title="Posisi video yang di-pin di layar lebar (Landscape)">
+                <select id="pinPositionSelect" onchange="changePinPosition()">
+                    <option value="top">📌 Pin: Top (Full)</option>
+                    <option value="left" selected>📌 Pin: Left Side (50%)</option>
+                    <option value="right">📌 Pin: Right Side (50%)</option>
+                </select>
+            </div>
+            <button onclick="syncAllStreams()" class="btn-success" title="Resynchronize all streams to live position">
+                <i data-lucide="refresh-cw"></i>
+                <span>Sync Live</span>
+            </button>
+            <span class="divider"></span>
+            <button id="fpsBtn" class="btn-warning" onclick="toggleLowFPS()">
+                <i data-lucide="gauge"></i>
+                <span>Low FPS: OFF</span>
+            </button>
+            <button id="ecoBtn" class="btn-eco" onclick="toggleEcoMode()">
+                <i data-lucide="leaf"></i>
+                <span>Eco: OFF</span>
+            </button>
+            <button class="btn-discovery" onclick="openLiveDiscoveryModal()" title="Auto-find and load top live streams">
+                <i data-lucide="radio"></i>
+                <span>Live Finder</span>
+            </button>
+            <button class="btn-news" onclick="toggleNewsPanel()">
+                <i data-lucide="trending-up"></i>
+                <span>News XAUUSD</span>
+            </button>
+            <span class="divider"></span>
+            <button class="btn-secondary btn-icon-only" onclick="toggleMenuBar()" title="Hide Menu">
+                <i data-lucide="chevron-up"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Modal Auto Live Discovery -->
+    <div id="discoveryModal" class="discovery-modal hidden">
+        <div class="discovery-modal-backdrop" onclick="closeLiveDiscoveryModal()"></div>
+        <div class="discovery-modal-dialog">
+            <div class="discovery-modal-header">
+                <div class="discovery-header-title">
+                    <div class="live-badge-icon"><i data-lucide="radio"></i></div>
+                    <div>
+                        <h3>Live Stream Auto-Discovery</h3>
+                        <p>Search & auto-open ongoing top YouTube live streams</p>
+                    </div>
+                </div>
+                <button class="btn-close-panel" onclick="closeLiveDiscoveryModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="discovery-modal-body">
+                <div class="discovery-form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label>Keyword / Topic</label>
+                        <div class="input-wrapper" style="width: 100%;">
+                            <i data-lucide="search" class="input-icon"></i>
+                            <input type="text" id="discoveryKeyword" value="XAUUSD Live Trading" placeholder="e.g. XAUUSD, Gold Trading, Forex" style="width: 100%;" />
+                        </div>
+                    </div>
+                    <div class="form-group" style="flex: 1.2;">
+                        <label>Stream Count</label>
+                        <div class="input-wrapper" style="width: 100%;">
+                            <i data-lucide="layers" class="input-icon"></i>
+                            <input type="number" id="discoveryCountInput" min="1" max="32" value="4" oninput="handleStreamCountChange(this.value)" style="width: 100%; font-family:'JetBrains Mono', monospace;" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Quick Presets</label>
+                    <div class="quick-count-presets">
+                        <button type="button" class="preset-count-btn" onclick="setDiscoveryPreset(2)">2 Streams</button>
+                        <button type="button" class="preset-count-btn active" onclick="setDiscoveryPreset(4)">4 (2×2)</button>
+                        <button type="button" class="preset-count-btn" onclick="setDiscoveryPreset(6)">6 (3×2)</button>
+                        <button type="button" class="preset-count-btn" onclick="setDiscoveryPreset(8)">8 (4×2)</button>
+                        <button type="button" class="preset-count-btn" onclick="setDiscoveryPreset(12)">12 Streams</button>
+                        <button type="button" class="preset-count-btn" onclick="setDiscoveryPreset(16)">16 Max</button>
+                    </div>
+                </div>
+
+                <!-- Performance & Hardware Advisory Box -->
+                <div id="performanceNotice" class="performance-advisory notice-normal">
+                    <div class="advisory-icon"><i data-lucide="info"></i></div>
+                    <div class="advisory-content">
+                        <strong id="advisoryTitle">Optimal Performance (4 Streams)</strong>
+                        <p id="advisoryDesc">Beban RAM ~1 GB dan bandwidth ~15 Mbps. Tampilan grafik dan chart candlestick sangat jernih dan nyaman.</p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Sort & Priority</label>
+                    <div class="sort-pills">
+                        <span class="sort-pill active"><i data-lucide="flame"></i> Most Popular (Live Viewers)</span>
+                        <span class="sort-pill"><i data-lucide="clock"></i> Active Stream Health</span>
+                    </div>
+                </div>
+
+                <div class="discovery-actions">
+                    <button class="btn-secondary" onclick="closeLiveDiscoveryModal()">Cancel</button>
+                    <button class="btn-primary btn-launch-discovery" onclick="executeLiveDiscovery()">
+                        <i data-lucide="play-circle"></i>
+                        <span>Auto-Load Live Streams</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="recent-container" id="recentPanel">
+        <div class="recent-label">
+            <i data-lucide="history"></i>
+            <span>Recent:</span>
+        </div>
+        <div id="recentList" class="recent-list"></div>
+    </div>
+
+    <!-- Floating News Panel untuk TradingView -->
+    <div id="newsPanel" class="news-panel hidden">
+        <div class="news-header">
+            <div class="news-header-title">
+                <i data-lucide="calendar"></i>
+                <span>Market Intelligence</span>
+            </div>
+            <button class="btn-close-panel" onclick="toggleNewsPanel()" title="Close Panel">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="news-content">
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchTab('tabLiveChart', this)"><i data-lucide="line-chart" style="width:13px;height:13px;margin-right:4px;"></i>Live Chart</button>
+                <button class="tab-btn" onclick="switchTab('tabEaSignals', this)"><i data-lucide="zap" style="width:13px;height:13px;margin-right:4px;"></i>EA Signals</button>
+                <button class="tab-btn" onclick="switchTab('tabNews', this)"><i data-lucide="newspaper" style="width:13px;height:13px;margin-right:4px;"></i>News</button>
+                <button class="tab-btn" onclick="switchTab('tabTechnical', this)"><i data-lucide="gauge" style="width:13px;height:13px;margin-right:4px;"></i>Technical</button>
+                <button class="tab-btn" onclick="switchTab('tabCalendar', this)"><i data-lucide="calendar" style="width:13px;height:13px;margin-right:4px;"></i>Calendar</button>
+            </div>
+            
+            <!-- Tab 1: Live Interactive Candlestick Chart (TradingView Advanced Real-Time Widget) -->
+            <div id="tabLiveChart" class="tab-pane active" style="flex: 1; height: 100%; display: flex; flex-direction: column;">
+                <div class="chart-status-bar">
+                    <div class="chart-symbol-badge">
+                        <span class="live-indicator-dot"></span>
+                        <strong>XAU/USD</strong> (Gold Spot / USD)
+                    </div>
+                    <div class="chart-timeframe-tag">1M • Real-Time Feed</div>
+                </div>
+                <div id="tradingview_gold_chart" class="tradingview-chart-embed" style="flex: 1; width: 100%; min-height: 400px;">
+                    <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_gold_chart&symbol=OANDA%3AXAUUSD&interval=1&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%22RSI%40tv-basicstudies%22%2C%22MASimple%40tv-basicstudies%22%2C%22MACD%40tv-basicstudies%22%5D&theme=dark&style=1&timezone=Asia%2FJakarta&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=localhost" style="width: 100%; height: 100%; border: none;"></iframe>
+                </div>
+            </div>
+
+            <!-- Tab 2: EA Bullish / Bearish Multi-Indicator Signal Engine -->
+            <div id="tabEaSignals" class="tab-pane" style="padding: 16px; overflow-y: auto; flex: 1; min-height: 0;">
+                <div class="ea-header-banner">
+                    <div class="ea-title">
+                        <i data-lucide="bot" style="color:var(--accent-cyan);width:20px;height:20px;"></i>
+                        <div>
+                            <h4>Noah Algo EA • Live Signal Engine</h4>
+                            <p>Multi-Timeframe Trend, EMA 20/50 Crossover & Momentum Detector</p>
+                        </div>
+                    </div>
+                    <div id="eaOverallBadge" class="ea-master-badge signal-bullish">
+                        <i data-lucide="trending-up"></i>
+                        <span>STRONG BULLISH</span>
+                    </div>
+                </div>
+
+                <!-- Signal Metric Cards -->
+                <div class="ea-metric-grid">
+                    <div class="ea-card">
+                        <span class="ea-card-label">Trend Bias (M1/M5)</span>
+                        <div id="eaTrendBias" class="ea-card-val text-bullish">▲ Bullish Momentum</div>
+                        <div class="ea-card-sub">EMA 20 > EMA 50 (Golden Cross)</div>
+                    </div>
+                    <div class="ea-card">
+                        <span class="ea-card-label">RSI Momentum (14)</span>
+                        <div id="eaRsiVal" class="ea-card-val text-warning">64.8 (Bullish Zone)</div>
+                        <div class="ea-card-sub">Strength: High Buying Volume</div>
+                    </div>
+                    <div class="ea-card">
+                        <span class="ea-card-label">Predicted Range</span>
+                        <div id="eaTargetRange" class="ea-card-val text-cyan">2,642.50 - 2,658.00</div>
+                        <div class="ea-card-sub">Next Key Resistance Zone</div>
+                    </div>
+                    <div class="ea-card">
+                        <span class="ea-card-label">EA Recommendation</span>
+                        <div id="eaAction" class="ea-card-val text-bullish">BUY ON PULLBACK</div>
+                        <div class="ea-card-sub">Entry Zone: 2,644.20 - 2,646.00</div>
+                    </div>
+                </div>
+
+                <!-- Live Signal Activity Log -->
+                <div class="ea-signal-logs">
+                    <div class="ea-log-header">
+                        <span><i data-lucide="activity" style="width:14px;height:14px;margin-right:6px;"></i>Live EA Trigger Feed</span>
+                        <span class="ea-pulse-dot"></span>
+                    </div>
+                    <div id="eaLogList" class="ea-log-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: News List -->
+            <div id="tabNews" class="tab-pane" style="padding: 16px; overflow-y: auto; flex: 1; min-height: 0;">
+                <div class="news-dashboard-header">
+                    <h3>Today's Market News</h3>
+                    <div id="dashboardClock" class="dashboard-clock"></div>
+                </div>
+                <div id="customNewsList" class="custom-news-list">
+                    <!-- Digernerate via JS -->
+                </div>
+            </div>
+
+            <!-- Tab 4: Technical Summary Gauge -->
+            <div id="tabTechnical" class="tab-pane" style="flex: 1;">
+                <div class="tradingview-widget-container" style="height: 100%;">
+                    <div class="tradingview-widget-container__widget" style="height: 100%;"></div>
+                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js" async>
+                    {
+                    "interval": "1m",
+                    "width": "100%",
+                    "isTransparent": true,
+                    "height": "100%",
+                    "symbol": "OANDA:XAUUSD",
+                    "showIntervalTabs": true,
+                    "displayMode": "single",
+                    "locale": "en",
+                    "colorTheme": "dark"
+                    }
+                    </script>
+                </div>
+            </div>
+
+            <!-- Tab 5: Economic Calendar -->
+            <div id="tabCalendar" class="tab-pane" style="flex: 1;">
+                <div class="tradingview-widget-container" style="height: 100%;">
+                    <div class="tradingview-widget-container__widget" style="height: 100%;"></div>
+                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
+                    {
+                    "colorTheme": "dark",
+                    "isTransparent": true,
+                    "width": "100%",
+                    "height": "100%",
+                    "locale": "en",
+                    "importanceFilter": "0,1",
+                    "countryFilter": "us"
+                    }
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main>
+        <div class="grid-container" id="streamGrid"></div>
+    </main>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Script API wajib dipanggil di HTML -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="script.js"></script>
+</body>
+</html>
