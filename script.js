@@ -653,7 +653,18 @@ function toggleChat(cellId, videoId) {
         btnToggle.innerHTML = `<i data-lucide="message-square"></i><span>Chat</span>`;
     } else {
         const currentDomain = window.location.hostname || "localhost";
-        chatWrapper.innerHTML = `<iframe src="https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${currentDomain}&dark_theme=1" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>`;
+        chatWrapper.innerHTML = `
+            <div class="chat-inner-header">
+                <span><i data-lucide="message-circle" style="width:12px;height:12px;margin-right:4px;"></i>Live Chat</span>
+                <a href="https://www.youtube.com/live_chat?v=${videoId}&is_popout=1" target="_blank" rel="noopener noreferrer" class="btn-popout-chat" title="Buka di Jendela Pop-Out (Bisa Login & Kirim Chat Langsung)">
+                    <i data-lucide="external-link" style="width:11px;height:11px;"></i>
+                    <span>Login & Chat (Pop-Out)</span>
+                </a>
+            </div>
+            <div class="chat-iframe-container">
+                <iframe src="https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${currentDomain}&dark_theme=1" allow="autoplay; encrypted-media; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"></iframe>
+            </div>
+        `;
         btnToggle.innerHTML = `<i data-lucide="message-square-off"></i><span>Close Chat</span>`;
     }
     if (window.lucide) lucide.createIcons();
