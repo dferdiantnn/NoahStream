@@ -695,16 +695,31 @@ function applyGridClasses() {
 }
 
 function syncAllStreams() {
+    let syncedCount = 0;
     for (const playerId in ytPlayers) {
         const player = ytPlayers[playerId];
         if (player && typeof player.seekTo === 'function') {
-            const currentDuration = player.getDuration();
-            if (currentDuration > 0) {
-                player.seekTo(currentDuration - 5, true);
+            try {
+                // For YouTube Live Streams:
+                // 1. Calling seekTo with an arbitrarily large number (e.g. 99999999 or getDuration + 1000)
+                // forces the YouTube HTML5 player to jump to the absolute real-time live head edge.
+                const duration = typeof player.getDuration === 'function' ? player.getDuration() : 0;
+                const targetTime = duration > 0 ? (duration + 9999) : 9999999;
+                
+                player.seekTo(targetTime, true);
+                
+                // Pastikan playback rate normal 1x dan status playing
+                if (typeof player.setPlaybackRate === 'function') {
+                    player.setPlaybackRate(1);
+                }
                 player.playVideo();
+                syncedCount++;
+            } catch (err) {
+                console.warn(`Sync error on player ${playerId}:`, err);
             }
         }
     }
+    showToastNotification(`Semua ${syncedCount} stream telah dipush ke detik live paling terdepan (Live Head Limit)!`, 'Sync Live Edge');
 }
 
 function switchTab(tabId, btnElement) {
