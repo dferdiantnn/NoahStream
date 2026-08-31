@@ -642,15 +642,12 @@ function removeStream(cellId, playerId, videoId) {
 }
 
 function openPopoutChat(videoId) {
-    const width = 400;
-    const height = 650;
-    const left = (window.screen.width / 2) - (width / 2);
-    const top = (window.screen.height / 2) - (height / 2);
-    window.open(
-        `https://www.youtube.com/live_chat?v=${videoId}&is_popout=1`,
-        `yt_chat_${videoId}`,
-        `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes`
-    );
+    // Membuka direct URL live chat YouTube di tab baru (Cookie & Login YouTube 100% aktif)
+    window.open(`https://www.youtube.com/live_chat?v=${videoId}&is_popout=1`, '_blank', 'noopener,noreferrer');
+}
+
+function openDirectStream(videoId) {
+    window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank', 'noopener,noreferrer');
 }
 
 function toggleChat(cellId, videoId) {
@@ -668,13 +665,15 @@ function toggleChat(cellId, videoId) {
         chatWrapper.innerHTML = `
             <div class="chat-inner-header">
                 <span><i data-lucide="message-circle" style="width:12px;height:12px;margin-right:4px;"></i>Live Chat</span>
-                <button type="button" onclick="openPopoutChat('${videoId}')" class="btn-popout-chat" title="Buka di Jendela Pop-Out (Bisa Login & Kirim Chat Langsung)">
-                    <i data-lucide="external-link" style="width:11px;height:11px;"></i>
-                    <span>Buka Pop-Out Chat</span>
-                </button>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <a href="https://www.youtube.com/live_chat?v=${videoId}&is_popout=1" target="_blank" rel="noopener noreferrer" class="btn-popout-chat" title="Buka Live Chat Resmi di Tab Baru">
+                        <i data-lucide="external-link" style="width:11px;height:11px;"></i>
+                        <span>Buka Chat Tab</span>
+                    </a>
+                </div>
             </div>
             <div class="chat-iframe-container">
-                <iframe src="https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${currentDomain}&dark_theme=1" allow="autoplay; encrypted-media; picture-in-picture; clipboard-write"></iframe>
+                <iframe src="https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${currentDomain}&dark_theme=1" allow="autoplay; encrypted-media; picture-in-picture"></iframe>
             </div>
         `;
         btnToggle.innerHTML = `<i data-lucide="message-square-off"></i><span>Close Chat</span>`;
