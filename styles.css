@@ -1046,22 +1046,28 @@ main {
 .btn-popout-chat {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
+    gap: 5px;
+    padding: 4px 10px;
     border-radius: var(--radius-sm);
-    background: rgba(6, 182, 212, 0.15);
-    border: 1px solid rgba(6, 182, 212, 0.3);
-    color: var(--accent-cyan);
-    text-decoration: none;
-    font-size: 0.68rem;
+    background: rgba(6, 182, 212, 0.2);
+    border: 1px solid rgba(6, 182, 212, 0.4);
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 0.72rem;
     font-weight: 700;
     transition: all var(--transition-fast);
 }
 
-.btn-popout-chat:hover {
-    background: rgba(6, 182, 212, 0.3);
-    color: #ffffff;
+.btn-popout-chat.highlight-glow {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.3) 0%, rgba(59, 130, 246, 0.3) 100%);
     border-color: var(--accent-cyan);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+}
+
+.btn-popout-chat:hover {
+    background: var(--accent-cyan);
+    color: #000000;
+    box-shadow: 0 0 18px rgba(6, 182, 212, 0.8);
 }
 
 .chat-iframe-container {

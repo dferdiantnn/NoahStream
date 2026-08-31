@@ -646,8 +646,12 @@ function openPopoutChat(videoId) {
     window.open(`https://www.youtube.com/live_chat?v=${videoId}&is_popout=1`, '_blank', 'noopener,noreferrer');
 }
 
-function openDirectStream(videoId) {
-    window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank', 'noopener,noreferrer');
+function openLiveChatPopup(videoId) {
+    const w = 450;
+    const h = 650;
+    const left = (screen.width / 2) - (w / 2);
+    const top = (screen.height / 2) - (h / 2);
+    window.open(`https://www.youtube.com/live_chat?v=${videoId}&is_popout=1`, `yt_chat_${videoId}`, `width=${w},height=${h},top=${top},left=${left},menubar=no,status=no`);
 }
 
 function toggleChat(cellId, videoId) {
@@ -664,12 +668,12 @@ function toggleChat(cellId, videoId) {
         const currentDomain = window.location.hostname || "localhost";
         chatWrapper.innerHTML = `
             <div class="chat-inner-header">
-                <span><i data-lucide="message-circle" style="width:12px;height:12px;margin-right:4px;"></i>Live Chat</span>
-                <div style="display:flex;gap:6px;align-items:center;">
-                    <a href="https://www.youtube.com/live_chat?v=${videoId}&is_popout=1" target="_blank" rel="noopener noreferrer" class="btn-popout-chat" title="Buka Live Chat Resmi di Tab Baru">
-                        <i data-lucide="external-link" style="width:11px;height:11px;"></i>
-                        <span>Buka Chat Tab</span>
-                    </a>
+                <span><i data-lucide="message-circle" style="width:13px;height:13px;margin-right:4px;"></i>YouTube Live Chat</span>
+                <div class="chat-header-actions">
+                    <button type="button" class="btn-popout-chat highlight-glow" onclick="openLiveChatPopup('${videoId}')" title="Buka Window Chat Resmi (Bisa Kirim Pesan & Login)">
+                        <i data-lucide="external-link" style="width:12px;height:12px;"></i>
+                        <span>💬 Klik Disini Untuk Chat / Login</span>
+                    </button>
                 </div>
             </div>
             <div class="chat-iframe-container">
