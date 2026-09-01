@@ -259,9 +259,28 @@ function toggleLowFPS() {
 }
 
 function extractVideoID(url) {
-    const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|live\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    if (!url) return '';
+    url = url.trim();
+    
+    // Check if channel URL (@handle, channel/ID, c/name)
+    if (url.startsWith('@') || url.includes('youtube.com/@') || url.includes('/channel/') || url.includes('/c/')) {
+        return url; // Return channel identifier directly
+    }
+
+    // YouTube Live format: https://www.youtube.com/live/SDPizKX8_v0?si=...
+    const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]{11})/);
+    if (liveMatch) return liveMatch[1];
+
+    // Standard YouTube matchers
+    const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : url; 
+    if (match && match[2] && match[2].length === 11) {
+        return match[2];
+    }
+    
+    // Clean string (e.g. 11-char video ID)
+    const cleanStr = url.split('?')[0].split('&')[0].replace(/[^a-zA-Z0-9_-]/g, '');
+    return cleanStr.length === 11 ? cleanStr : url;
 }
 
 function loadSession() {
@@ -1106,43 +1125,49 @@ function closeWaitingListModal() {
 
 function addWaitingStream() {
     const input = document.getElementById('waitingInput');
-    if (!input || !input.value.trim()) return;
+    if (!input || !input.value.trim()) {
+        showToastNotification('Silakan masukkan link URL atau @channel YouTube.', 'Input Kosong');
+        return;
+    }
     
     const rawVal = input.value.trim();
-    const videoId = extractVideoID(rawVal);
+    const targetId = extractVideoID(rawVal);
     
-    if (!videoId) {
-        showToastNotification('Link YouTube atau Video ID tidak valid.', 'Error');
+    if (!targetId) {
+        showToastNotification('Link YouTube tidak valid. Coba paste link lengkap.', 'Error');
         return;
     }
 
-    if (activeStreams.some(s => s.id === videoId)) {
-        showToastNotification('Stream ini sudah aktif sedang diputar di grid!', 'Notice');
+    if (activeStreams.some(s => s.id === targetId)) {
+        showToastNotification('Stream ini sudah aktif sedang diputar di layar!', 'Notice');
         input.value = '';
         return;
     }
 
-    if (waitingList.some(w => w.id === videoId)) {
-        showToastNotification('Stream ini sudah ada dalam Waiting List!', 'Notice');
+    if (waitingList.some(w => w.id === targetId || w.url === rawVal)) {
+        showToastNotification('Channel/Stream ini sudah ada dalam Waiting List!', 'Notice');
         input.value = '';
         return;
     }
+
+    const isChan = rawVal.includes('@') || rawVal.includes('/channel/') || rawVal.includes('/c/');
+    const displayName = isChan ? `Channel (${targetId})` : `YouTube Target (${targetId})`;
 
     waitingList.push({
-        id: videoId,
+        id: targetId,
         url: rawVal,
-        title: `YouTube Live Target (${videoId})`,
+        title: displayName,
         addedAt: new Date().toLocaleTimeString(),
-        status: 'Waiting for Live...'
+        status: 'Sedang mengecek status...'
     });
 
     saveWaitingList();
     input.value = '';
-    showToastNotification(`Target stream ${videoId} masuk ke Waiting List. Auto-detect aktif!`, 'Waiting List Added');
+    showToastNotification(`"${displayName}" berhasil ditambahkan ke Waiting List. Auto-detect aktif!`, 'Target Ditambahkan');
     renderWaitingListItems();
     
     // Cek langsung status pertama kali
-    checkSingleWaitingItem(videoId);
+    checkSingleWaitingItem(targetId);
 }
 
 function removeWaitingStream(videoId) {
@@ -1178,7 +1203,7 @@ function renderWaitingListItems() {
             <div class="waiting-item-info">
                 <div class="waiting-item-title">${item.title}</div>
                 <div class="waiting-item-meta">
-                    <span>ID: <strong>${item.id}</strong></span>
+                    <span>Target: <strong>${item.id}</strong></span>
                     <span>• Ditambahkan: ${item.addedAt}</span>
                     <span style="color:var(--accent-gold);">• ${item.status}</span>
                 </div>
@@ -1199,17 +1224,17 @@ function renderWaitingListItems() {
 
 async function checkSingleWaitingItem(videoId, isManual = false) {
     try {
-        const res = await fetch(`/api/check-live?id=${videoId}`);
+        const res = await fetch(`/api/check-live?id=${encodeURIComponent(videoId)}`);
         if (res.ok) {
             const data = await res.json();
-            if (data.isLive) {
-                // HORE! STREAM SUDAH LIVE!
+            if (data.isLive && data.id) {
+                // STREAM SUDAH LIVE!
                 showToastNotification(`🔔 STREAM LIVE DETECTED: "${data.title}" sudah mulai siaran! Otomatis dimuat ke layar.`, 'Stream Mulai Live!');
                 removeWaitingStream(videoId);
-                addStream(videoId, false, 1500, data.title);
+                addStream(data.id, false, 1500, data.title);
                 return;
             } else if (data.title) {
-                // Update judul asli video
+                // Update judul asli video / channel
                 const item = waitingList.find(w => w.id === videoId);
                 if (item) {
                     item.title = data.title;
@@ -1220,7 +1245,7 @@ async function checkSingleWaitingItem(videoId, isManual = false) {
             }
         }
         if (isManual) {
-            showToastNotification(`Stream ${videoId} masih belum mulai live. Sistem akan terus menunggu.`, 'Status: Belum Live');
+            showToastNotification(`Target ${videoId} masih belum mulai live. Sistem akan terus menunggu otomatis.`, 'Status: Belum Live');
         }
     } catch (err) {
         console.warn(`Error checking live status for ${videoId}:`, err);

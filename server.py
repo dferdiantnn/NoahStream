@@ -38,19 +38,55 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(result).encode('utf-8'))
 
-    def check_single_live_status(self, video_id):
-        if not video_id:
-            return {'isLive': False, 'error': 'No video ID'}
-        url = f'https://www.youtube.com/watch?v={video_id}'
+    def check_single_live_status(self, target):
+        if not target:
+            return {'isLive': False, 'error': 'No target specified'}
+        
+        target = target.strip()
         headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7'
         }
+
+        # Check if target is a Channel URL (@handle, /channel/..., /c/..., etc)
+        if target.startswith('@') or 'youtube.com/@' in target or '/channel/' in target or '/c/' in target:
+            clean_target = target
+            if not clean_target.startswith('http'):
+                clean_target = f'https://www.youtube.com/{clean_target.lstrip("/")}'
+            if not clean_target.endswith('/live'):
+                clean_target = clean_target.rstrip('/') + '/live'
+            
+            try:
+                req = urllib.request.Request(clean_target, headers=headers)
+                with urllib.request.urlopen(req, timeout=7) as response:
+                    html = response.read().decode('utf-8')
+                    vid_match = re.search(r'var ytInitialData\s*=\s*({.+?});</script>', html)
+                    is_live = ('"isLive":true' in html or '"isLiveNow":true' in html or '"status":"LIVE"' in html)
+                    
+                    # Extract active video ID from channel live page
+                    active_vid = None
+                    id_match = re.search(r'"videoId":"([a-zA-Z0-9_-]{11})"', html)
+                    if id_match:
+                        active_vid = id_match.group(1)
+                    
+                    title_match = re.search(r'<title>(.*?)</title>', html)
+                    title = title_match.group(1).replace(' - YouTube', '').strip() if title_match else target
+
+                    return {
+                        'id': active_vid or target,
+                        'isLive': bool(is_live and active_vid),
+                        'title': title,
+                        'isChannel': True
+                    }
+            except Exception as e:
+                return {'id': target, 'isLive': False, 'error': str(e)}
+
+        # Otherwise treat as standard Video ID or /watch URL
+        url = target if target.startswith('http') else f'https://www.youtube.com/watch?v={target}'
         try:
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=6) as response:
                 html = response.read().decode('utf-8')
-                # Check for live indicators in YouTube watch page
                 is_live = ('"isLive":true' in html or 
                            '"isLiveNow":true' in html or 
                            '"liveStreamabilityRenderer"' in html or
@@ -58,10 +94,10 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                            'canonicalBaseUrl":"/live/' in html)
                 
                 title_match = re.search(r'<title>(.*?)</title>', html)
-                title = title_match.group(1).replace(' - YouTube', '').strip() if title_match else f'Live Stream {video_id}'
-                return {'id': video_id, 'isLive': bool(is_live), 'title': title}
+                title = title_match.group(1).replace(' - YouTube', '').strip() if title_match else f'Live Stream {target}'
+                return {'id': target, 'isLive': bool(is_live), 'title': title}
         except Exception as e:
-            return {'id': video_id, 'isLive': False, 'error': str(e)}
+            return {'id': target, 'isLive': False, 'error': str(e)}
 
     def handle_youtube_live(self, query_string):
         params = urllib.parse.parse_qs(query_string)
