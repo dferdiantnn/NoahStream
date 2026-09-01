@@ -167,27 +167,30 @@
     <!-- Modal Waiting List (Auto-Detect Streamer Live) -->
     <div id="waitingListModal" class="discovery-modal hidden">
         <div class="discovery-modal-backdrop" onclick="closeWaitingListModal()"></div>
-        <div class="discovery-modal-content" style="max-width: 580px;">
+        <div class="discovery-modal-dialog" style="width: 580px; max-width: 92vw;">
             <div class="discovery-modal-header">
-                <div class="discovery-title">
-                    <i data-lucide="clock" style="color:var(--accent-gold);"></i>
-                    <h3>Stream Waiting List & Auto-Detect</h3>
+                <div class="discovery-header-title">
+                    <div class="live-badge-icon" style="background:linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, rgba(217, 119, 6, 0.3) 100%); border-color: rgba(245, 158, 11, 0.5); color: #fde68a;">
+                        <i data-lucide="clock"></i>
+                    </div>
+                    <div>
+                        <h3>Stream Waiting List & Auto-Detect</h3>
+                        <p>Auto-polling background check (15 detik) untuk mendeteksi live stream</p>
+                    </div>
                 </div>
-                <button class="btn-close-modal" onclick="closeWaitingListModal()">
-                    <i data-lucide="x"></i>
-                </button>
+                <button class="btn-close-panel" onclick="closeWaitingListModal()"><i data-lucide="x"></i></button>
             </div>
             
             <div class="discovery-modal-body">
-                <p class="discovery-subtitle">
-                    Masukkan link YouTube live/channel yang belum mulai. Sistem akan otomatis memonitor di background setiap <strong>15 detik</strong> dan langsung menampilkan stream begitu siaran live dimulai! 🔔
+                <p class="discovery-subtitle" style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
+                    Masukkan link YouTube live/channel yang belum mulai. Sistem akan otomatis memonitor di background dan <strong>langsung memutar stream otomatis</strong> begitu siaran live dimulai! 🔔
                 </p>
 
                 <div class="form-group">
                     <label>Tambah Link Target YouTube:</label>
                     <div style="display:flex;gap:8px;">
-                        <input type="text" id="waitingInput" placeholder="https://www.youtube.com/live/... atau Video ID" style="flex:1;width:auto;" onkeypress="if(event.key==='Enter') addWaitingStream()" />
-                        <button class="btn-primary" onclick="addWaitingStream()" style="padding:8px 14px;">
+                        <input type="text" id="waitingInput" placeholder="https://www.youtube.com/live/... atau @channel" style="flex:1;width:auto;" onkeypress="if(event.key==='Enter') addWaitingStream()" />
+                        <button class="btn-primary" onclick="addWaitingStream()" style="padding:8px 16px;flex-shrink:0;">
                             <i data-lucide="plus"></i>
                             <span>Monitor</span>
                         </button>
@@ -208,7 +211,7 @@
 
                 <div class="discovery-actions" style="margin-top:20px;">
                     <button class="btn-secondary" onclick="closeWaitingListModal()">Tutup</button>
-                    <button class="btn-primary" onclick="checkWaitingListNow()" style="background:var(--accent-gold);border-color:var(--accent-gold);color:#000;">
+                    <button class="btn-primary" onclick="checkWaitingListNow()" style="background:var(--accent-gold);border-color:var(--accent-gold);color:#000;font-weight:700;">
                         <i data-lucide="refresh-cw"></i>
                         <span>Cek Status Sekarang</span>
                     </button>
