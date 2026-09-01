@@ -1222,16 +1222,45 @@ function renderWaitingListItems() {
     if (window.lucide) lucide.createIcons();
 }
 
+function playLiveDetectedChime() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+        osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.12); // A5
+        osc.frequency.setValueAtTime(1174.66, audioCtx.currentTime + 0.24); // D6
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.6);
+    } catch (e) {
+        // AudioContext silent fallback
+    }
+}
+
 async function checkSingleWaitingItem(videoId, isManual = false) {
     try {
         const res = await fetch(`/api/check-live?id=${encodeURIComponent(videoId)}`);
         if (res.ok) {
             const data = await res.json();
             if (data.isLive && data.id) {
-                // STREAM SUDAH LIVE!
-                showToastNotification(`🔔 STREAM LIVE DETECTED: "${data.title}" sudah mulai siaran! Otomatis dimuat ke layar.`, 'Stream Mulai Live!');
+                // HORE! STREAM DIMULAI OLEH STREAMER!
+                playLiveDetectedChime();
+                showToastNotification(`🔔 STREAM LIVE DETECTED: "${data.title}" sudah mulai siaran! Otomatis dimuat dan ditayangkan ke layar.`, 'Stream Mulai Live!');
+                
+                // Hapus dari antrean waiting list
                 removeWaitingStream(videoId);
+                
+                // LANGSUNG TAYANGKAN SECARA OTOMATIS KE GRID STREAM!
                 addStream(data.id, false, 1500, data.title);
+                
+                // Pastikan grid tersusun rapi
+                reorderGrid();
+                saveSession();
                 return;
             } else if (data.title) {
                 // Update judul asli video / channel
