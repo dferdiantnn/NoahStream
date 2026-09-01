@@ -15,10 +15,16 @@
 </head>
 <body>
 
-    <button id="showMenuBtn" class="floating-menu-btn ui-hidden" onclick="toggleMenuBar()">
-        <i data-lucide="menu"></i>
-        <span>Show Menu</span>
-    </button>
+    <div id="floatingControls" class="floating-controls-group ui-hidden">
+        <button id="floatingSyncBtn" class="floating-sync-btn" onclick="syncAllStreams()" title="Sync Semua Stream ke Live Terdepan (Shortcut: ➡ / Arrow Right)">
+            <i data-lucide="refresh-cw"></i>
+            <span>Sync Live <kbd>➡</kbd></span>
+        </button>
+        <button id="showMenuBtn" class="floating-menu-btn" onclick="toggleMenuBar()">
+            <i data-lucide="menu"></i>
+            <span>Show Menu</span>
+        </button>
+    </div>
 
     <header id="mainHeader">
         <div class="brand-container">
@@ -54,9 +60,13 @@
                     <option value="right">📌 Pin: Right Side (50%)</option>
                 </select>
             </div>
-            <button onclick="syncAllStreams()" class="btn-success" title="Resynchronize all streams to live position">
+            <button onclick="syncAllStreams()" class="btn-success" title="Resynchronize all streams to live position (Shortcut: ➡ / Arrow Right)">
                 <i data-lucide="refresh-cw"></i>
-                <span>Sync Live</span>
+                <span>Sync Live <kbd style="font-size:0.65rem;padding:1px 4px;background:rgba(0,0,0,0.3);border-radius:3px;margin-left:4px;">➡</kbd></span>
+            </button>
+            <button class="btn-waiting-list" onclick="openWaitingListModal()" title="Auto-watch streams when they start live">
+                <i data-lucide="clock"></i>
+                <span>Waiting List <strong id="waitingListBadge" class="waiting-count-badge">0</strong></span>
             </button>
             <span class="divider"></span>
             <button id="fpsBtn" class="btn-warning" onclick="toggleLowFPS()">
@@ -148,6 +158,59 @@
                     <button class="btn-primary btn-launch-discovery" onclick="executeLiveDiscovery()">
                         <i data-lucide="play-circle"></i>
                         <span>Auto-Load Live Streams</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Waiting List (Auto-Detect Streamer Live) -->
+    <div id="waitingListModal" class="discovery-modal hidden">
+        <div class="discovery-modal-backdrop" onclick="closeWaitingListModal()"></div>
+        <div class="discovery-modal-content" style="max-width: 580px;">
+            <div class="discovery-modal-header">
+                <div class="discovery-title">
+                    <i data-lucide="clock" style="color:var(--accent-gold);"></i>
+                    <h3>Stream Waiting List & Auto-Detect</h3>
+                </div>
+                <button class="btn-close-modal" onclick="closeWaitingListModal()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            
+            <div class="discovery-modal-body">
+                <p class="discovery-subtitle">
+                    Masukkan link YouTube live/channel yang belum mulai. Sistem akan otomatis memonitor di background setiap <strong>15 detik</strong> dan langsung menampilkan stream begitu siaran live dimulai! 🔔
+                </p>
+
+                <div class="form-group">
+                    <label>Tambah Link Target YouTube:</label>
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" id="waitingInput" placeholder="https://www.youtube.com/live/... atau Video ID" style="flex:1;width:auto;" onkeypress="if(event.key==='Enter') addWaitingStream()" />
+                        <button class="btn-primary" onclick="addWaitingStream()" style="padding:8px 14px;">
+                            <i data-lucide="plus"></i>
+                            <span>Monitor</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top:16px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <label style="margin-bottom:0;">Daftar Stream yang Sedang Ditunggu (<span id="waitingCountText">0</span>):</label>
+                        <span id="waitingStatusIndicator" style="font-size:0.72rem;color:var(--success);display:flex;align-items:center;gap:4px;">
+                            <span class="live-indicator-dot" style="width:5px;height:5px;"></span> Auto-polling aktif (15s)
+                        </span>
+                    </div>
+                    <div id="waitingItemsList" class="waiting-items-container">
+                        <!-- Dynamic items -->
+                    </div>
+                </div>
+
+                <div class="discovery-actions" style="margin-top:20px;">
+                    <button class="btn-secondary" onclick="closeWaitingListModal()">Tutup</button>
+                    <button class="btn-primary" onclick="checkWaitingListNow()" style="background:var(--accent-gold);border-color:var(--accent-gold);color:#000;">
+                        <i data-lucide="refresh-cw"></i>
+                        <span>Cek Status Sekarang</span>
                     </button>
                 </div>
             </div>

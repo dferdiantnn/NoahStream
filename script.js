@@ -14,10 +14,29 @@ function handleEnterKey(event) {
 }
 
 function toggleMenuBar() {
-    document.getElementById('mainHeader').classList.toggle('ui-hidden');
-    document.getElementById('recentPanel').classList.toggle('ui-hidden');
-    document.getElementById('showMenuBtn').classList.toggle('ui-hidden');
+    const header = document.getElementById('mainHeader');
+    const recent = document.getElementById('recentPanel');
+    const floatingControls = document.getElementById('floatingControls');
+    
+    if (header) header.classList.toggle('ui-hidden');
+    if (recent) recent.classList.toggle('ui-hidden');
+    if (floatingControls) {
+        floatingControls.classList.toggle('ui-hidden');
+        if (window.lucide) lucide.createIcons();
+    }
 }
+
+// Global Keyboard Shortcut: Arrow Right (➡) untuk Sync Live seketika
+window.addEventListener('keydown', (e) => {
+    // Abaikan jika user sedang mengetik di input form
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+        return;
+    }
+    if (e.key === 'ArrowRight' || e.code === 'ArrowRight') {
+        e.preventDefault();
+        syncAllStreams();
+    }
+});
 
 function toggleNewsPanel() {
     document.getElementById('newsPanel').classList.toggle('hidden');
@@ -1056,8 +1075,181 @@ function renderEaLogs() {
     `).join('');
 }
 
+// ==========================================================================
+// WAITING LIST & AUTO-DETECT ENGINE
+// ==========================================================================
+let waitingList = [];
+
+function loadWaitingList() {
+    waitingList = JSON.parse(localStorage.getItem('noah_waiting_list') || '[]');
+    updateWaitingListUI();
+}
+
+function saveWaitingList() {
+    localStorage.setItem('noah_waiting_list', JSON.stringify(waitingList));
+    updateWaitingListUI();
+}
+
+function openWaitingListModal() {
+    const modal = document.getElementById('waitingListModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        renderWaitingListItems();
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+function closeWaitingListModal() {
+    const modal = document.getElementById('waitingListModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function addWaitingStream() {
+    const input = document.getElementById('waitingInput');
+    if (!input || !input.value.trim()) return;
+    
+    const rawVal = input.value.trim();
+    const videoId = extractVideoID(rawVal);
+    
+    if (!videoId) {
+        showToastNotification('Link YouTube atau Video ID tidak valid.', 'Error');
+        return;
+    }
+
+    if (activeStreams.some(s => s.id === videoId)) {
+        showToastNotification('Stream ini sudah aktif sedang diputar di grid!', 'Notice');
+        input.value = '';
+        return;
+    }
+
+    if (waitingList.some(w => w.id === videoId)) {
+        showToastNotification('Stream ini sudah ada dalam Waiting List!', 'Notice');
+        input.value = '';
+        return;
+    }
+
+    waitingList.push({
+        id: videoId,
+        url: rawVal,
+        title: `YouTube Live Target (${videoId})`,
+        addedAt: new Date().toLocaleTimeString(),
+        status: 'Waiting for Live...'
+    });
+
+    saveWaitingList();
+    input.value = '';
+    showToastNotification(`Target stream ${videoId} masuk ke Waiting List. Auto-detect aktif!`, 'Waiting List Added');
+    renderWaitingListItems();
+    
+    // Cek langsung status pertama kali
+    checkSingleWaitingItem(videoId);
+}
+
+function removeWaitingStream(videoId) {
+    waitingList = waitingList.filter(w => w.id !== videoId);
+    saveWaitingList();
+    renderWaitingListItems();
+}
+
+function updateWaitingListUI() {
+    const badge = document.getElementById('waitingListBadge');
+    const countText = document.getElementById('waitingCountText');
+    if (badge) badge.innerText = waitingList.length;
+    if (countText) countText.innerText = waitingList.length;
+}
+
+function renderWaitingListItems() {
+    const container = document.getElementById('waitingItemsList');
+    if (!container) return;
+
+    if (waitingList.length === 0) {
+        container.innerHTML = `
+            <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.8rem;">
+                <i data-lucide="inbox" style="width:24px;height:24px;margin-bottom:6px;opacity:0.5;"></i>
+                <div>Belum ada stream dalam antrean waiting list.</div>
+            </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+        return;
+    }
+
+    container.innerHTML = waitingList.map(item => `
+        <div class="waiting-item-card" id="waiting-card-${item.id}">
+            <div class="waiting-item-info">
+                <div class="waiting-item-title">${item.title}</div>
+                <div class="waiting-item-meta">
+                    <span>ID: <strong>${item.id}</strong></span>
+                    <span>• Ditambahkan: ${item.addedAt}</span>
+                    <span style="color:var(--accent-gold);">• ${item.status}</span>
+                </div>
+            </div>
+            <div class="waiting-item-actions">
+                <button class="btn-secondary btn-icon-only" onclick="checkSingleWaitingItem('${item.id}', true)" title="Cek Sekarang">
+                    <i data-lucide="refresh-cw" style="width:13px;height:13px;"></i>
+                </button>
+                <button class="btn-danger btn-icon-only" onclick="removeWaitingStream('${item.id}')" title="Hapus dari Waiting List">
+                    <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+
+    if (window.lucide) lucide.createIcons();
+}
+
+async function checkSingleWaitingItem(videoId, isManual = false) {
+    try {
+        const res = await fetch(`/api/check-live?id=${videoId}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.isLive) {
+                // HORE! STREAM SUDAH LIVE!
+                showToastNotification(`🔔 STREAM LIVE DETECTED: "${data.title}" sudah mulai siaran! Otomatis dimuat ke layar.`, 'Stream Mulai Live!');
+                removeWaitingStream(videoId);
+                addStream(videoId, false, 1500, data.title);
+                return;
+            } else if (data.title) {
+                // Update judul asli video
+                const item = waitingList.find(w => w.id === videoId);
+                if (item) {
+                    item.title = data.title;
+                    item.status = 'Belum Live / Standby';
+                    saveWaitingList();
+                    renderWaitingListItems();
+                }
+            }
+        }
+        if (isManual) {
+            showToastNotification(`Stream ${videoId} masih belum mulai live. Sistem akan terus menunggu.`, 'Status: Belum Live');
+        }
+    } catch (err) {
+        console.warn(`Error checking live status for ${videoId}:`, err);
+    }
+}
+
+function checkWaitingListNow() {
+    if (waitingList.length === 0) {
+        showToastNotification('Tidak ada stream di dalam Waiting List.', 'Notice');
+        return;
+    }
+    showToastNotification('Memeriksa status semua stream di waiting list...', 'Checking...');
+    waitingList.forEach(item => {
+        checkSingleWaitingItem(item.id, false);
+    });
+}
+
+// Auto-polling background detector setiap 15 detik
+setInterval(() => {
+    if (waitingList.length > 0) {
+        waitingList.forEach(item => {
+            checkSingleWaitingItem(item.id, false);
+        });
+    }
+}, 15000);
+
 // Initialize
 updateClock();
 generateTodaySchedule();
 initEaSignalEngine();
+loadWaitingList();
 if (window.lucide) lucide.createIcons();

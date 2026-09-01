@@ -23,8 +23,45 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         if parsed.path == '/api/youtube-live':
             self.handle_youtube_live(parsed.query)
+        elif parsed.path == '/api/check-live':
+            self.handle_check_live(parsed.query)
         else:
             super().do_GET()
+
+    def handle_check_live(self, query_string):
+        params = urllib.parse.parse_qs(query_string)
+        v_id = params.get('id', [''])[0]
+        result = self.check_single_live_status(v_id)
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(json.dumps(result).encode('utf-8'))
+
+    def check_single_live_status(self, video_id):
+        if not video_id:
+            return {'isLive': False, 'error': 'No video ID'}
+        url = f'https://www.youtube.com/watch?v={video_id}'
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7'
+        }
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=6) as response:
+                html = response.read().decode('utf-8')
+                # Check for live indicators in YouTube watch page
+                is_live = ('"isLive":true' in html or 
+                           '"isLiveNow":true' in html or 
+                           '"liveStreamabilityRenderer"' in html or
+                           '"status":"LIVE"' in html or
+                           'canonicalBaseUrl":"/live/' in html)
+                
+                title_match = re.search(r'<title>(.*?)</title>', html)
+                title = title_match.group(1).replace(' - YouTube', '').strip() if title_match else f'Live Stream {video_id}'
+                return {'id': video_id, 'isLive': bool(is_live), 'title': title}
+        except Exception as e:
+            return {'id': video_id, 'isLive': False, 'error': str(e)}
 
     def handle_youtube_live(self, query_string):
         params = urllib.parse.parse_qs(query_string)
