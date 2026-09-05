@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,11 +18,11 @@
     <div id="floatingControls" class="floating-controls-group ui-hidden">
         <button id="floatingSyncBtn" class="floating-sync-btn" onclick="syncAllStreams()" title="Sync Semua Stream ke Live Terdepan (Shortcut: ➡ / Arrow Right)">
             <i data-lucide="refresh-cw"></i>
-            <span>Sync Live <kbd>➡</kbd></span>
+            <span>Sinkronisasi Live <kbd>➡</kbd></span>
         </button>
         <button id="showMenuBtn" class="floating-menu-btn" onclick="toggleMenuBar()">
             <i data-lucide="menu"></i>
-            <span>Show Menu</span>
+            <span>Tampilkan Menu</span>
         </button>
     </div>
 
@@ -35,7 +35,7 @@
             <div class="brand-meta-row">
                 <span class="app-version-badge">v2.6 Pro</span>
                 <span class="version-dot"></span>
-                <div id="realtimeClock" class="clock">Loading Time...</div>
+                <div id="realtimeClock" class="clock">Memuat Waktu...</div>
             </div>
         </div>
         <div class="controls">
@@ -43,11 +43,11 @@
             <div class="control-group input-group">
                 <div class="input-wrapper">
                     <i data-lucide="search" class="input-icon"></i>
-                    <input type="text" id="videoInput" placeholder="Paste YouTube URL or Video ID..." onkeypress="handleEnterKey(event)" />
+                    <input type="text" id="videoInput" placeholder="Tempel link YouTube atau ID video..." onkeypress="handleEnterKey(event)" />
                 </div>
                 <button class="btn-primary" onclick="handleAddStreamInput()" title="Add Stream">
                     <i data-lucide="plus"></i>
-                    <span>Add</span>
+                    <span>Tambah</span>
                 </button>
             </div>
 
@@ -57,11 +57,11 @@
             <div class="control-group layout-group">
                 <div class="select-wrapper">
                     <select id="layoutSelect" onchange="changeLayout()" title="Grid Columns">
-                        <option value="auto">Auto Columns</option>
-                        <option value="1">1 Column</option>
-                        <option value="2">2 Columns</option>
-                        <option value="3">3 Columns</option>
-                        <option value="4">4 Columns</option>
+                        <option value="auto">Kolom Otomatis</option>
+                        <option value="1">1 Kolom</option>
+                        <option value="2">2 Kolom</option>
+                        <option value="3">3 Kolom</option>
+                        <option value="4">4 Kolom</option>
                     </select>
                 </div>
                 <div class="select-wrapper" id="pinPositionWrapper" title="Posisi video yang di-pin">
@@ -79,19 +79,19 @@
             <div class="control-group tools-group">
                 <button onclick="syncAllStreams()" class="btn-success" title="Resynchronize all streams (Shortcut: ➡)">
                     <i data-lucide="refresh-cw"></i>
-                    <span>Sync Live <kbd class="shortcut-kbd">➡</kbd></span>
+                    <span>Sinkronisasi Live <kbd class="shortcut-kbd">➡</kbd></span>
                 </button>
                 <button class="btn-waiting-list" onclick="openWaitingListModal()" title="Auto-watch streams when they start live">
                     <i data-lucide="clock"></i>
-                    <span>Waiting List <strong id="waitingListBadge" class="waiting-count-badge">0</strong></span>
+                    <span>Daftar Tunggu <strong id="waitingListBadge" class="waiting-count-badge">0</strong></span>
                 </button>
                 <button class="btn-discovery" onclick="openLiveDiscoveryModal()" title="Auto-find and load top live streams">
                     <i data-lucide="radio"></i>
-                    <span>Live Finder</span>
+                    <span>Pencari Live</span>
                 </button>
                 <button class="btn-news" onclick="openNewsTab('tabNews')" title="TradingView Market & Economic News">
                     <i data-lucide="trending-up"></i>
-                    <span>News XAUUSD</span>
+                    <span>Berita XAUUSD</span>
                 </button>
             </div>
 
@@ -137,7 +137,7 @@
             <div class="control-group action-group">
                 <button id="hideMenuBtn" class="btn-secondary btn-hide-menu" onclick="toggleMenuBar()" title="Sembunyikan Menu Bar">
                     <i data-lucide="chevron-up"></i>
-                    <span>Hide</span>
+                    <span>Sembunyikan</span>
                 </button>
             </div>
         </div>
@@ -302,7 +302,7 @@
                 </select>
                 <button id="miniDashboardToggleBtn" class="btn-panel-action" onclick="toggleMiniDashboard()" title="Toggle Compact / Mini Dashboard Mode">
                     <i data-lucide="minimize-2"></i>
-                    <span>Mini View</span>
+                    <span>Tampilan Mini</span>
                 </button>
                 <button class="btn-close-panel" onclick="toggleNewsPanel()" title="Close Panel">
                     <i data-lucide="x"></i>
@@ -311,24 +311,24 @@
         </div>
         <div class="news-content">
             <div class="tab-buttons">
-                <button class="tab-btn active" onclick="switchTab('tabNews', this)"><i data-lucide="newspaper" style="width:13px;height:13px;margin-right:4px;"></i>News</button>
-                <button class="tab-btn" onclick="switchTab('tabLiveChart', this)"><i data-lucide="line-chart" style="width:13px;height:13px;margin-right:4px;"></i>Live Chart</button>
-                <button class="tab-btn" onclick="switchTab('tabEaSignals', this)"><i data-lucide="zap" style="width:13px;height:13px;margin-right:4px;"></i>EA Signals</button>
-                <button class="tab-btn" onclick="switchTab('tabTechnical', this)"><i data-lucide="gauge" style="width:13px;height:13px;margin-right:4px;"></i>Technical</button>
-                <button class="tab-btn" onclick="switchTab('tabCalendar', this)"><i data-lucide="calendar" style="width:13px;height:13px;margin-right:4px;"></i>Calendar</button>
+                <button class="tab-btn active" onclick="switchTab('tabNews', this)"><i data-lucide="newspaper" style="width:13px;height:13px;margin-right:4px;"></i>Berita</button>
+                <button class="tab-btn" onclick="switchTab('tabLiveChart', this)"><i data-lucide="line-chart" style="width:13px;height:13px;margin-right:4px;"></i>Grafik Live</button>
+                <button class="tab-btn" onclick="switchTab('tabEaSignals', this)"><i data-lucide="zap" style="width:13px;height:13px;margin-right:4px;"></i>Sinyal EA</button>
+                <button class="tab-btn" onclick="switchTab('tabTechnical', this)"><i data-lucide="gauge" style="width:13px;height:13px;margin-right:4px;"></i>Teknikal</button>
+                <button class="tab-btn" onclick="switchTab('tabCalendar', this)"><i data-lucide="calendar" style="width:13px;height:13px;margin-right:4px;"></i>Kalender</button>
             </div>
             
             <!-- Tab 1: Live Interactive Candlestick Chart (TradingView Advanced Real-Time Widget) -->
             <div id="tabLiveChart" class="tab-pane">
                 <div class="chart-status-bar">
-                    <div class="chart-symbol-badge">
+                    <div class="chart-symbol-badge" id="chartSymbolBadge">
                         <span class="live-indicator-dot"></span>
-                        <strong>XAU/USD</strong> (Gold Spot / USD)
+                        <strong>XAU/USD</strong> <span id="goldSpotTitleText">(Spot Emas / USD)</span>
                     </div>
-                    <div class="chart-timeframe-tag">1M • Real-Time Feed</div>
+                    <div class="chart-timeframe-tag" id="chartTimeframeTag">1M • Feed Real-Time</div>
                 </div>
                 <div id="tradingview_gold_chart" class="tradingview-chart-embed" style="flex: 1; width: 100%; min-height: 400px;">
-                    <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_gold_chart&symbol=OANDA%3AXAUUSD&interval=1&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%22RSI%40tv-basicstudies%22%2C%22MASimple%40tv-basicstudies%22%2C%22MACD%40tv-basicstudies%22%5D&theme=dark&style=1&timezone=Asia%2FJakarta&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=localhost" style="width: 100%; height: 100%; border: none;"></iframe>
+                    <iframe id="tradingview_gold_iframe" src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_gold_chart&symbol=OANDA%3AXAUUSD&interval=1&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%22RSI%40tv-basicstudies%22%2C%22MASimple%40tv-basicstudies%22%2C%22MACD%40tv-basicstudies%22%5D&theme=dark&style=1&timezone=Asia%2FJakarta&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=id&utm_source=localhost" style="width: 100%; height: 100%; border: none;"></iframe>
                 </div>
             </div>
 
@@ -338,44 +338,44 @@
                     <div class="ea-title">
                         <i data-lucide="bot" style="color:var(--accent-cyan);width:20px;height:20px;"></i>
                         <div>
-                            <h4>Noah Algo EA • Live Signal Engine</h4>
-                            <p>Multi-Timeframe Trend, EMA 20/50 Crossover & Momentum Detector</p>
+                            <h4 id="eaMainTitle">Noah Algo EA • Mesin Sinyal Live</h4>
+                            <p id="eaMainSub">Tren Multi-Timeframe, Persilangan EMA 20/50 & Detektor Momentum</p>
                         </div>
                     </div>
                     <div id="eaOverallBadge" class="ea-master-badge signal-bullish">
                         <i data-lucide="trending-up"></i>
-                        <span>STRONG BULLISH</span>
+                        <span>BULLISH KUAT</span>
                     </div>
                 </div>
 
                 <!-- Signal Metric Cards -->
                 <div class="ea-metric-grid">
                     <div class="ea-card">
-                        <span class="ea-card-label">Trend Bias (M1/M5)</span>
-                        <div id="eaTrendBias" class="ea-card-val text-bullish">▲ Bullish Momentum</div>
-                        <div class="ea-card-sub">EMA 20 > EMA 50 (Golden Cross)</div>
+                        <span class="ea-card-label" id="eaTrendBiasLabel">Bias Tren (M1/M5)</span>
+                        <div id="eaTrendBias" class="ea-card-val text-bullish">▲ Momentum Bullish</div>
+                        <div class="ea-card-sub" id="eaTrendBiasSub">EMA 20 > EMA 50 (Golden Cross)</div>
                     </div>
                     <div class="ea-card">
-                        <span class="ea-card-label">RSI Momentum (14)</span>
-                        <div id="eaRsiVal" class="ea-card-val text-warning">64.8 (Bullish Zone)</div>
-                        <div class="ea-card-sub">Strength: High Buying Volume</div>
+                        <span class="ea-card-label" id="eaRsiLabel">Momentum RSI (14)</span>
+                        <div id="eaRsiVal" class="ea-card-val text-warning">64.8 (Zona Bullish)</div>
+                        <div class="ea-card-sub" id="eaRsiSub">Kekuatan: Volume Beli Tinggi</div>
                     </div>
                     <div class="ea-card">
-                        <span class="ea-card-label">Predicted Range</span>
+                        <span class="ea-card-label" id="eaTargetLabel">Rentang Prediksi</span>
                         <div id="eaTargetRange" class="ea-card-val text-cyan">2,642.50 - 2,658.00</div>
-                        <div class="ea-card-sub">Next Key Resistance Zone</div>
+                        <div class="ea-card-sub" id="eaTargetSub">Area Resisten Kunci Berikutnya</div>
                     </div>
                     <div class="ea-card">
-                        <span class="ea-card-label">EA Recommendation</span>
+                        <span class="ea-card-label" id="eaActionLabel">Rekomendasi EA</span>
                         <div id="eaAction" class="ea-card-val text-bullish">BUY ON PULLBACK</div>
-                        <div class="ea-card-sub">Entry Zone: 2,644.20 - 2,646.00</div>
+                        <div class="ea-card-sub" id="eaActionSub">Zona Entri: 2,644.20 - 2,646.00</div>
                     </div>
                 </div>
 
                 <!-- Live Signal Activity Log -->
                 <div class="ea-signal-logs">
                     <div class="ea-log-header">
-                        <span><i data-lucide="activity" style="width:14px;height:14px;margin-right:6px;"></i>Live EA Trigger Feed</span>
+                        <span><i data-lucide="activity" style="width:14px;height:14px;margin-right:6px;"></i><span id="eaLogFeedTitle">Feed Trigger EA Live</span></span>
                         <span class="ea-pulse-dot"></span>
                     </div>
                     <div id="eaLogList" class="ea-log-list">
@@ -388,8 +388,8 @@
             <div id="tabNews" class="tab-pane active" style="padding: 16px; overflow-y: auto; flex: 1; min-height: 0;">
                 <div class="news-dashboard-header">
                     <div>
-                        <h3>High-Impact News & Predictive Analytics</h3>
-                        <p style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Automated Gold (XAUUSD) Impact Forecaster & Multi-Stage Alert</p>
+                        <h3 id="newsHeaderH3">Berita Berdampak Tinggi & Analisis Prediktif</h3>
+                        <p id="newsHeaderP" style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Prakiraan Dampak Emas (XAUUSD) & Peringatan Multi-Tahap Otomatis</p>
                     </div>
                     <div id="dashboardClock" class="dashboard-clock"></div>
                 </div>
@@ -446,7 +446,7 @@
                     "symbol": "OANDA:XAUUSD",
                     "showIntervalTabs": true,
                     "displayMode": "single",
-                    "locale": "en",
+                    "locale": "id",
                     "colorTheme": "dark"
                     }
                     </script>
@@ -463,7 +463,7 @@
                     "isTransparent": true,
                     "width": "100%",
                     "height": "100%",
-                    "locale": "en",
+                    "locale": "id",
                     "importanceFilter": "0,1",
                     "countryFilter": "us"
                     }
@@ -482,7 +482,7 @@
         <div id="toastActionHeader" class="toast-action-header hidden">
             <button class="btn-clear-all-toasts" onclick="clearAllToasts()">
                 <i data-lucide="trash-2"></i>
-                <span>Clear All Alerts</span>
+                <span id="clearAllAlertsText">Hapus Semua Notifikasi</span>
             </button>
         </div>
         <div id="toastList" class="toast-list"></div>

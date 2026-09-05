@@ -18,6 +18,79 @@ function t(key, fallback = '') {
     return fallback;
 }
 
+function reloadTradingViewWidgets(lang) {
+    const tvLocaleMap = {
+        id: 'id',
+        en: 'en',
+        ja: 'ja',
+        zh: 'zh_CN',
+        ar: 'ar_AE',
+        es: 'es',
+        ru: 'ru',
+        de: 'de_DE',
+        fr: 'fr',
+        pt: 'br',
+        ko: 'kr'
+    };
+    const tvLocale = tvLocaleMap[lang] || 'id';
+
+    // 1. Live Chart iframe
+    const chartIframe = document.getElementById('tradingview_gold_iframe');
+    if (chartIframe) {
+        chartIframe.src = `https://s.tradingview.com/widgetembed/?frameElementId=tradingview_gold_chart&symbol=OANDA%3AXAUUSD&interval=1&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%22RSI%40tv-basicstudies%22%2C%22MASimple%40tv-basicstudies%22%2C%22MACD%40tv-basicstudies%22%5D&theme=dark&style=1&timezone=Asia%2FJakarta&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=${tvLocale}&utm_source=localhost`;
+    }
+
+    // 2. Technical Analysis Widget
+    const tabTech = document.getElementById('tabTechnical');
+    if (tabTech) {
+        tabTech.innerHTML = `
+            <div class="tradingview-widget-container" style="height: 100%;">
+                <div class="tradingview-widget-container__widget" style="height: 100%;"></div>
+            </div>
+        `;
+        const scriptTech = document.createElement('script');
+        scriptTech.type = 'text/javascript';
+        scriptTech.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
+        scriptTech.async = true;
+        scriptTech.innerHTML = JSON.stringify({
+            "interval": "1m",
+            "width": "100%",
+            "isTransparent": true,
+            "height": "100%",
+            "symbol": "OANDA:XAUUSD",
+            "showIntervalTabs": true,
+            "displayMode": "single",
+            "locale": tvLocale,
+            "colorTheme": "dark"
+        });
+        tabTech.querySelector('.tradingview-widget-container').appendChild(scriptTech);
+    }
+
+    // 3. Economic Calendar Widget
+    const tabCal = document.getElementById('tabCalendar');
+    if (tabCal) {
+        tabCal.innerHTML = `
+            <div class="tradingview-widget-container" style="height: 100%;">
+                <div class="tradingview-widget-container__widget" style="height: 100%;"></div>
+            </div>
+        `;
+        const scriptCal = document.createElement('script');
+        scriptCal.type = 'text/javascript';
+        scriptCal.src = 'https://s3.tradingview.com/external-embedding/embed-widget-events.js';
+        scriptCal.async = true;
+        scriptCal.innerHTML = JSON.stringify({
+            "colorTheme": "dark",
+            "isTransparent": true,
+            "width": "100%",
+            "height": "100%",
+            "locale": tvLocale,
+            "importanceFilter": "0,1",
+            "countryFilter": "us"
+        });
+        tabCal.querySelector('.tradingview-widget-container').appendChild(scriptCal);
+    }
+}
+
 function applyLanguage(lang) {
     if (!window.NOAH_TRANSLATIONS || !window.NOAH_TRANSLATIONS[lang]) lang = 'id';
     currentLang = lang;
@@ -32,6 +105,12 @@ function applyLanguage(lang) {
     // Search input placeholder
     const videoInput = document.getElementById('videoInput');
     if (videoInput) videoInput.placeholder = t('videoPlaceholder', 'Paste YouTube URL or Video ID...');
+
+    // Floating Controls
+    const floatSyncSpan = document.querySelector('#floatingSyncBtn span');
+    if (floatSyncSpan) floatSyncSpan.innerHTML = `${t('syncLive', 'Sync Live ➡')} <kbd>➡</kbd>`;
+    const floatMenuSpan = document.querySelector('#showMenuBtn span');
+    if (floatMenuSpan) floatMenuSpan.innerText = t('showMenu', 'Show Menu');
 
     // Add button
     const addBtnSpan = document.querySelector('.input-group button span');
@@ -117,9 +196,9 @@ function applyLanguage(lang) {
     }
 
     // Subtitle & Header in tabNews
-    const newsHeaderH3 = document.querySelector('#tabNews h3');
+    const newsHeaderH3 = document.getElementById('newsHeaderH3') || document.querySelector('#tabNews h3');
     if (newsHeaderH3) newsHeaderH3.innerText = t('newsHeading', 'High-Impact News & Predictive Analytics');
-    const newsHeaderP = document.querySelector('#tabNews p');
+    const newsHeaderP = document.getElementById('newsHeaderP') || document.querySelector('#tabNews p');
     if (newsHeaderP) newsHeaderP.innerText = t('newsSubheading', 'Automated Gold (XAUUSD) Impact Forecaster & Multi-Stage Alert');
 
     // Alert Timing Header
@@ -140,6 +219,32 @@ function applyLanguage(lang) {
     const releaseTag = document.querySelector('.alert-timing-options .stage-tag');
     if (releaseTag) releaseTag.innerText = t('alertAtRelease', '⚡ Saat Data Rilis (T-0)');
 
+    // Tab 1: Live Chart Header
+    const goldSpotEl = document.getElementById('goldSpotTitleText');
+    if (goldSpotEl) goldSpotEl.innerText = `(${t('goldSpotTitle', 'Spot Emas / USD')})`;
+    const chartFeedTag = document.getElementById('chartTimeframeTag');
+    if (chartFeedTag) chartFeedTag.innerText = t('liveChartFeedTag', '1M • Feed Real-Time');
+
+    // Tab 2: EA Signals Header & Cards
+    const eaTitleEl = document.getElementById('eaMainTitle');
+    if (eaTitleEl) eaTitleEl.innerText = t('tabEaTitle', 'Noah Algo EA • Mesin Sinyal Live');
+    const eaSubEl = document.getElementById('eaMainSub');
+    if (eaSubEl) eaSubEl.innerText = t('tabEaSub', 'Tren Multi-Timeframe, Persilangan EMA 20/50 & Detektor Momentum');
+    const eaTrendBiasLabel = document.getElementById('eaTrendBiasLabel');
+    if (eaTrendBiasLabel) eaTrendBiasLabel.innerText = t('eaTrendBiasLabel', 'Bias Tren (M1/M5)');
+    const eaRsiLabel = document.getElementById('eaRsiLabel');
+    if (eaRsiLabel) eaRsiLabel.innerText = t('eaRsiLabel', 'Momentum RSI (14)');
+    const eaTargetLabel = document.getElementById('eaTargetLabel');
+    if (eaTargetLabel) eaTargetLabel.innerText = t('eaTargetLabel', 'Rentang Prediksi');
+    const eaActionLabel = document.getElementById('eaActionLabel');
+    if (eaActionLabel) eaActionLabel.innerText = t('eaActionLabel', 'Rekomendasi EA');
+    const eaLogFeedTitle = document.getElementById('eaLogFeedTitle');
+    if (eaLogFeedTitle) eaLogFeedTitle.innerText = t('liveEaTriggerFeed', 'Feed Trigger EA Live');
+
+    // Clear All Alerts button
+    const clearAlertsBtn = document.getElementById('clearAllAlertsText');
+    if (clearAlertsBtn) clearAlertsBtn.innerText = t('clearAllAlerts', 'Hapus Semua Notifikasi');
+
     // Re-render news dashboard in selected language
     if (typeof renderNewsDashboard === 'function') {
         renderNewsDashboard();
@@ -150,6 +255,7 @@ function applyLanguage(lang) {
 
 function changeLanguage(lang) {
     applyLanguage(lang);
+    reloadTradingViewWidgets(lang);
     if (typeof showToastNotification === 'function') {
         showToastNotification(t('langToast', 'Bahasa diubah'), 'Language');
     }
@@ -1680,15 +1786,15 @@ function renderNewsDashboard() {
         const diffSec = news.targetTimestamp ? Math.floor((news.targetTimestamp - nowTs) / 1000) : null;
         let statusHtml = '';
         if (news.isReleased) {
-            statusHtml = `<div class="news-status status-released" id="status-${news.id}">RELEASED</div>`;
+            statusHtml = `<div class="news-status status-released" id="status-${news.id}">${t('statusReleased', 'DIRILIS')}</div>`;
         } else {
-            let countdownBadge = 'Upcoming';
+            let countdownBadge = t('statusUpcoming', 'Akan Rilis');
             if (diffSec !== null && diffSec > 0) {
                 const days = Math.floor(diffSec / 86400);
                 const hours = Math.floor((diffSec % 86400) / 3600);
                 const mins = Math.floor((diffSec % 3600) / 60);
                 if (days > 0) {
-                    countdownBadge = `⏳ T-${days} Hari ${hours} Jam`;
+                    countdownBadge = `⏳ T-${days} ${t('unitDays', 'Hari')} ${hours} ${t('unitHours', 'Jam')}`;
                 } else if (hours > 0) {
                     countdownBadge = `⏳ T-${hours}j ${mins}m`;
                 } else {
@@ -1701,9 +1807,9 @@ function renderNewsDashboard() {
         let resultHtml = news.isReleased 
             ? `
                 <div style="font-size:0.75rem;line-height:1.4;">
-                    <div><strong>Actual:</strong> <span style="color:#fff;font-weight:700;">${news.actual}</span> (Frcst: ${news.forecast}) &bull; <strong>${news.usdStatus}</strong></div>
+                    <div><strong>${t('actualLabel', 'Aktual:')}</strong> <span style="color:#fff;font-weight:700;">${news.actual}</span> (${t('forecastLabel', 'Prakiraan:')} ${news.forecast}) &bull; <strong>${news.usdStatus}</strong></div>
                     <div style="margin-top:4px;">
-                        <span class="${news.impactClass}" style="font-size:0.76rem;font-weight:800;">${news.icon} REKOMENDASI: ${news.actionGuide} (${news.xauProb}% Conf.)</span>
+                        <span class="${news.impactClass}" style="font-size:0.76rem;font-weight:800;">${news.icon} ${t('recommendationLabel', 'REKOMENDASI:')} ${news.actionGuide} (${news.xauProb}% Conf.)</span>
                     </div>
                 </div>
             `
@@ -1724,9 +1830,9 @@ function renderNewsDashboard() {
                 <div style="flex:1;">
                     <div class="news-title">${news.title}</div>
                     <div class="news-data">
-                        <span>Forecast: <strong>${news.forecast}</strong></span>
-                        <span>Previous: <strong>${news.prev}</strong></span>
-                        <span style="color:var(--primary);font-weight:700;">• High Impact</span>
+                        <span>${t('forecastLabel', 'Prakiraan:')} <strong>${news.forecast}</strong></span>
+                        <span>${t('prevLabel', 'Sebelumnya:')} <strong>${news.prev}</strong></span>
+                        <span style="color:var(--primary);font-weight:700;">${t('highImpact', '• Dampak Tinggi')}</span>
                     </div>
                 </div>
                 <div style="text-align: right; flex-shrink: 0; margin-left: 10px;">
@@ -2040,17 +2146,17 @@ function initEaSignalEngine() {
             badge.style.background = 'rgba(255, 255, 255, 0.08)';
             badge.style.color = 'var(--text-muted)';
             badge.style.borderColor = 'var(--border-subtle)';
-            badge.innerHTML = `<i data-lucide="pause-circle"></i><span>MARKET CLOSED (WEEKEND)</span>`;
+            badge.innerHTML = `<i data-lucide="pause-circle"></i><span>${t('marketClosedWeekend', 'PASAR TUTUP (AKHIR PEKAN)')}</span>`;
             trend.className = 'ea-card-val';
             trend.style.color = 'var(--text-muted)';
-            trend.innerText = '⏸️ Market Freeze (Weekend)';
+            trend.innerText = t('marketFreezeWeekend', '⏸️ Pasar Tutup (Akhir Pekan)');
             rsiEl.className = 'ea-card-val';
             rsiEl.style.color = 'var(--text-secondary)';
-            rsiEl.innerText = '48.2 (Market Closed)';
+            rsiEl.innerText = `48.2 (${t('closingLevel', 'Pasar Tutup')})`;
             actionEl.className = 'ea-card-val';
             actionEl.style.color = 'var(--text-muted)';
-            actionEl.innerText = 'WAIT FOR MARKET OPEN';
-            rangeEl.innerText = '4,416.70 - 4,440.00 (Closing)';
+            actionEl.innerText = t('waitForMarketOpen', 'TUNGGU PASAR BUKA');
+            rangeEl.innerText = `4,416.70 - 4,440.00 (${t('closingLevel', 'Penutupan')})`;
             if (window.lucide) lucide.createIcons();
             return;
         }
@@ -2062,23 +2168,23 @@ function initEaSignalEngine() {
 
         if (rsiVal > 55) { // BULLISH BIAS
             badge.className = 'ea-master-badge signal-bullish';
-            badge.innerHTML = `<i data-lucide="trending-up"></i><span>STRONG BULLISH</span>`;
+            badge.innerHTML = `<i data-lucide="trending-up"></i><span>${t('strongBullish', 'BULLISH KUAT')}</span>`;
             trend.className = 'ea-card-val text-bullish';
-            trend.innerText = '▲ Bullish Momentum';
+            trend.innerText = `▲ ${t('bullishMomentum', 'Momentum Bullish')}`;
             rsiEl.className = 'ea-card-val text-bullish';
-            rsiEl.innerText = `${rsiVal} (Bullish Zone)`;
+            rsiEl.innerText = `${rsiVal} (${t('bullishZone', 'Zona Bullish')})`;
             actionEl.className = 'ea-card-val text-bullish';
-            actionEl.innerText = 'BUY ON PULLBACK';
+            actionEl.innerText = t('buyOnPullback', 'BUY ON PULLBACK');
             rangeEl.innerText = `${basePrice} - ${(parseFloat(basePrice) + 18).toFixed(2)}`;
         } else { // BEARISH BIAS
             badge.className = 'ea-master-badge signal-bearish';
-            badge.innerHTML = `<i data-lucide="trending-down"></i><span>BEARISH PRESSURE</span>`;
+            badge.innerHTML = `<i data-lucide="trending-down"></i><span>${t('bearishPressure', 'TEKANAN BEARISH')}</span>`;
             trend.className = 'ea-card-val text-bearish';
-            trend.innerText = '▼ Bearish Divergence';
+            trend.innerText = `▼ ${t('bearishDivergence', 'Divergensi Bearish')}`;
             rsiEl.className = 'ea-card-val text-bearish';
-            rsiEl.innerText = `${rsiVal} (Bearish Zone)`;
+            rsiEl.innerText = `${rsiVal} (${t('bearishZone', 'Zona Bearish')})`;
             actionEl.className = 'ea-card-val text-bearish';
-            actionEl.innerText = 'SELL ON RALLY';
+            actionEl.innerText = t('sellOnRally', 'SELL ON RALLY');
             rangeEl.innerText = `${(parseFloat(basePrice) - 16).toFixed(2)} - ${basePrice}`;
         }
 
@@ -2324,6 +2430,10 @@ setInterval(() => {
 }, 15000);
 
 // Initialize
+applyLanguage(currentLang);
+if (currentLang !== 'id') {
+    reloadTradingViewWidgets(currentLang);
+}
 updateClock();
 generateTodaySchedule();
 initEaSignalEngine();
