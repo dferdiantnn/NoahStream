@@ -2588,3 +2588,123 @@ body.eco-active .video-wrapper iframe {
         scroll-behavior: auto !important;
     }
 }
+
+/* ==========================================================================
+   NATIVE ECONOMIC CALENDAR (100% LOCALIZED)
+   ========================================================================== */
+.view-switch-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 5px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.view-switch-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+.view-switch-btn.active {
+    background: rgba(6, 182, 212, 0.18);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    font-weight: 700;
+}
+
+.cal-filter-pill {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 11px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.cal-filter-pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border-color: var(--border-highlight);
+}
+
+.cal-filter-pill.active {
+    background: var(--accent-gold);
+    color: #000000;
+    border-color: var(--accent-gold);
+    font-weight: 700;
+}
+
+.cal-event-card {
+    background: var(--bg-glass-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-left: 3px solid var(--primary);
+    transition: all var(--transition-fast);
+}
+
+.cal-event-card:hover {
+    border-color: var(--border-highlight);
+    transform: translateY(-1px);
+}
+
+.cal-event-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.cal-event-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+}
+
+.cal-currency-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+.cal-impact-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.cal-impact-badge.high {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+}
+
+.cal-impact-badge.medium {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #fde68a;
+}
+

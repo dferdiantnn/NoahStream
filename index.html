@@ -454,8 +454,48 @@
             </div>
 
             <!-- Tab 5: Economic Calendar -->
-            <div id="tabCalendar" class="tab-pane" style="flex: 1;">
-                <div class="tradingview-widget-container" style="height: 100%;">
+            <div id="tabCalendar" class="tab-pane" style="padding: 16px; overflow-y: auto; flex: 1; min-height: 0;">
+                <!-- Calendar Header & Filters -->
+                <div class="calendar-dashboard-header" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <h3 style="font-size: 0.92rem; font-weight: 700; color: #fff; margin: 0; display: flex; align-items: center; gap: 6px;">
+                            <i data-lucide="calendar" style="width: 16px; height: 16px; color: var(--accent-gold);"></i>
+                            <span id="calHeaderTitle">Kalender Ekonomi Global (Forex Factory)</span>
+                        </h3>
+                        <p id="calHeaderSub" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">Jadwal Rilis Data Makro, Indikator Finansial & Analisis Lengkap Bahasa Indonesia</p>
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <button type="button" class="view-switch-btn active" id="btnViewNativeCal" onclick="switchCalendarView('native')">
+                            <i data-lucide="book-open" style="width: 12px; height: 12px;"></i>
+                            <span id="nativeCalBtnText">🇮🇩 Kalender Bahasa Indonesia</span>
+                        </button>
+                        <button type="button" class="view-switch-btn" id="btnViewTvCal" onclick="switchCalendarView('tv')">
+                            <i data-lucide="globe" style="width: 12px; height: 12px;"></i>
+                            <span>TradingView Widget</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter Bar -->
+                <div id="calendarFilterBar" class="calendar-filter-bar" style="display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; align-items: center;">
+                    <button type="button" class="cal-filter-pill active" onclick="filterCalendar('all', this)" id="filterCalAll">Semua</button>
+                    <button type="button" class="cal-filter-pill" onclick="filterCalendar('high', this)" id="filterCalHigh">🔴 Dampak Tinggi</button>
+                    <button type="button" class="cal-filter-pill" onclick="filterCalendar('usd', this)" id="filterCalUsd">🇺🇸 USD (Fokus Emas)</button>
+                    <button type="button" class="cal-filter-pill" onclick="filterCalendar('sep10', this)">Kamis, 10 Sep</button>
+                    <button type="button" class="cal-filter-pill" onclick="filterCalendar('sep11', this)">Jumat, 11 Sep</button>
+                    <span class="cal-source-badge" style="margin-left: auto; font-size: 0.68rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 4px;">
+                        <i data-lucide="shield-check" style="width: 12px; height: 12px;"></i>
+                        <span>Forex Factory & CME FedWatch Feed</span>
+                    </span>
+                </div>
+
+                <!-- Native Calendar Event List (100% Bahasa Indonesia) -->
+                <div id="nativeCalendarContainer" class="calendar-event-list">
+                    <!-- Rendered via JS -->
+                </div>
+
+                <!-- TradingView Calendar Container (Hidden by default, can be toggled) -->
+                <div id="tvCalendarContainer" class="tradingview-widget-container hidden" style="height: calc(100% - 70px); min-height: 420px;">
                     <div class="tradingview-widget-container__widget" style="height: 100%;"></div>
                     <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
                     {

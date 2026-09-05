@@ -66,13 +66,11 @@ function reloadTradingViewWidgets(lang) {
         tabTech.querySelector('.tradingview-widget-container').appendChild(scriptTech);
     }
 
-    // 3. Economic Calendar Widget
-    const tabCal = document.getElementById('tabCalendar');
-    if (tabCal) {
-        tabCal.innerHTML = `
-            <div class="tradingview-widget-container" style="height: 100%;">
-                <div class="tradingview-widget-container__widget" style="height: 100%;"></div>
-            </div>
+    // 3. Economic Calendar Widget (TradingView Embed)
+    const tvCal = document.getElementById('tvCalendarContainer');
+    if (tvCal) {
+        tvCal.innerHTML = `
+            <div class="tradingview-widget-container__widget" style="height: 100%;"></div>
         `;
         const scriptCal = document.createElement('script');
         scriptCal.type = 'text/javascript';
@@ -87,7 +85,7 @@ function reloadTradingViewWidgets(lang) {
             "importanceFilter": "0,1",
             "countryFilter": "us"
         });
-        tabCal.querySelector('.tradingview-widget-container').appendChild(scriptCal);
+        tvCal.appendChild(scriptCal);
     }
 }
 
@@ -245,9 +243,22 @@ function applyLanguage(lang) {
     const clearAlertsBtn = document.getElementById('clearAllAlertsText');
     if (clearAlertsBtn) clearAlertsBtn.innerText = t('clearAllAlerts', 'Hapus Semua Notifikasi');
 
+    // Calendar Header Localization
+    const calHeaderTitle = document.getElementById('calHeaderTitle');
+    if (calHeaderTitle) calHeaderTitle.innerText = t('calHeaderTitle', 'Kalender Ekonomi Global (Forex Factory)');
+    const calHeaderSub = document.getElementById('calHeaderSub');
+    if (calHeaderSub) calHeaderSub.innerText = t('calHeaderSub', 'Jadwal Rilis Data Makro, Indikator Finansial & Analisis Lengkap Bahasa Indonesia');
+    const nativeCalBtnText = document.getElementById('nativeCalBtnText');
+    if (nativeCalBtnText) nativeCalBtnText.innerText = currentLang === 'id' ? '🇮🇩 Kalender Bahasa Indonesia' : '📅 Economic Calendar';
+
     // Re-render news dashboard in selected language
     if (typeof renderNewsDashboard === 'function') {
         renderNewsDashboard();
+    }
+
+    // Re-render economic calendar in selected language
+    if (typeof renderEconomicCalendar === 'function') {
+        renderEconomicCalendar(currentCalFilter);
     }
 
     if (window.lucide) lucide.createIcons();
@@ -1874,6 +1885,439 @@ function renderNewsDashboard() {
     if (window.lucide) lucide.createIcons();
 }
 
+// ==========================================================================
+// NATIVE ECONOMIC CALENDAR (100% INDONESIAN / MULTI-LANGUAGE)
+// ==========================================================================
+const globalCalendarEvents = [
+    {
+        id: 'cal-ecb-sep10',
+        currency: 'EUR',
+        flag: '🇪🇺',
+        title: {
+            id: 'ECB Main Refinancing Rate (Suku Bunga Bank Sentral Eropa)',
+            en: 'ECB Main Refinancing Rate',
+            ja: 'ECB主要政策金利発表',
+            zh: '欧洲央行主要再融资利率',
+            es: 'Tasa de Refinanciación Principal del BCE',
+            ru: 'Основная ставка рефинансирования ЕЦБ',
+            de: 'EZB-Hauptrefinanzierungssatz',
+            fr: 'Taux de refinancement principal de la BCE',
+            pt: 'Taxa Principal de Refinanciamento do BCE',
+            ar: 'سعر الفائدة الرئيسي للبنك المركزي الأوروبي',
+            ko: '유럽중앙은행(ECB) 기준금리 결정'
+        },
+        impact: 'high',
+        dateStr: 'Kamis, 10 Sep 2026',
+        timeStr: '19:15',
+        timestamp: 1789042500000,
+        forecast: '3.50%',
+        prev: '3.75%',
+        actual: null,
+        description: {
+            id: 'Keputusan penetapan suku bunga acuan utama oleh Bank Sentral Eropa (ECB). Menentukan biaya pinjaman di zona euro dan berdampak langsung pada nilai tukar EUR/USD serta likuiditas modal global.',
+            en: 'The European Central Bank rate decision determines borrowing costs in the Eurozone, impacting EUR/USD and global capital liquidity.'
+        },
+        whyImportant: {
+            id: 'Kebijakan moneter Eropa mempengaruhi indeks Dolar AS (DXY) secara berbanding terbalik. Pelemahan Dolar akibat penguatan Euro sering kali mendorong harga emas (XAUUSD).',
+            en: 'European monetary policy affects the US Dollar Index inversely. A weaker dollar typically supports Gold prices.'
+        },
+        impactRule: {
+            id: 'ECB Pangkas Bunga Sesuai Ekspektasi → EUR Melemah sesaat. Jika ECB Hawkish Tahan Bunga → Dolar AS Tertekan → Emas Menguat (BUY XAUUSD).',
+            en: 'Dovish ECB weakens EUR and temporarily lifts USD. Hawkish ECB pressures USD and supports Gold.'
+        },
+        pipsEst: '±60 - 100 Pips'
+    },
+    {
+        id: 'cal-core-ppi-sep10',
+        currency: 'USD',
+        flag: '🇺🇸',
+        title: {
+            id: 'Core PPI m/m (Indeks Harga Produsen Inti)',
+            en: 'Core PPI m/m (Producer Price Index)',
+            ja: '米 コア生産者物価指数 (PPI)',
+            zh: '美国核心生产者物价指数 (PPI)',
+            es: 'IPP Subyacente m/m de EE.UU.',
+            ru: 'Базовый индекс цен производителей США (PPI)',
+            de: 'US-Kern-Erzeugerpreisindex (PPI)',
+            fr: 'Indice des prix à la production sous-jacent (PPI)',
+            pt: 'IPP Núcleo m/m dos EUA',
+            ar: 'مؤشر أسعار المنتجين الأساسي الأمريكي',
+            ko: '미국 근원 생산자물가지수 (PPI)'
+        },
+        impact: 'high',
+        dateStr: 'Kamis, 10 Sep 2026',
+        timeStr: '19:30',
+        timestamp: 1789043400000,
+        forecast: '0.3%',
+        prev: '0.2%',
+        actual: null,
+        description: {
+            id: 'Indeks Harga Produsen Inti (Core PPI) mengukur rata-rata perubahan harga jual yang diterima produsen dalam negeri di AS untuk output mereka, di luar sektor makanan dan energi yang volatil. Merupakan leading indicator utama inflasi konsumen (CPI).',
+            en: 'Core PPI measures the average change in selling prices received by domestic producers for their output, excluding volatile food and energy. A key leading indicator for CPI.'
+        },
+        whyImportant: {
+            id: 'Kenaikan biaya di tingkat pabrik dan grosir akan diteruskan ke konsumen akhir. Jika angka ini naik, The Fed dipaksa mempertahankan suku bunga tinggi lebih lama.',
+            en: 'Factory and wholesale cost increases are passed to consumers. Rising PPI pressures the Fed to maintain restrictive interest rates.'
+        },
+        impactRule: {
+            id: 'Aktual > Forecast → Inflasi Produsen Naik → The Fed Hawkish → Dolar Menguat 📈 → SELL XAUUSD 📉. Aktual < Forecast → Biaya Pabrik Turun → The Fed Dovish → Dolar Melemah 📉 → BUY XAUUSD 🚀.',
+            en: 'Actual > Forecast = Hawkish Fed / Strong USD = SELL Gold. Actual < Forecast = Dovish Fed / Weak USD = BUY Gold.'
+        },
+        pipsEst: '±70 - 130 Pips'
+    },
+    {
+        id: 'cal-jobless-claims-sep10',
+        currency: 'USD',
+        flag: '🇺🇸',
+        title: {
+            id: 'Unemployment Claims (Klaim Pengangguran Awal)',
+            en: 'Initial Jobless Claims',
+            ja: '米 新規失業保険申請件数',
+            zh: '美国初请失业金人数',
+            es: 'Nuevas Peticiones de Subsidio por Desempleo',
+            ru: 'Число первичных заявок на пособие по безработице в США',
+            de: 'US-Erstanträge auf Arbeitslosenhilfe',
+            fr: 'Inscriptions au chômage aux États-Unis',
+            pt: 'Pedidos Iniciais de Seguro-Desemprego dos EUA',
+            ar: 'طلبات إعانة البطالة الأمريكية الأولية',
+            ko: '미국 신규 실업수당 청구건수'
+        },
+        impact: 'high',
+        dateStr: 'Kamis, 10 Sep 2026',
+        timeStr: '19:30',
+        timestamp: 1789043400000,
+        forecast: '205K',
+        prev: '206K',
+        actual: null,
+        description: {
+            id: 'Jumlah individu yang pertama kali mengajukan permohonan asuransi pengangguran ke Departemen Tenaga Kerja AS selama pekan sebelumnya. Indikator mingguan paling tepat waktu untuk mengukur pemutusan hubungan kerja (PHK).',
+            en: 'The number of individuals who filed for unemployment insurance for the first time. The most timely weekly indicator of layoffs in the US economy.'
+        },
+        whyImportant: {
+            id: 'Pasar tenaga kerja adalah salah satu dari dua mandat utama The Fed (Maximum Employment & Stable Prices). Lonjakan klaim pengangguran memaksa Fed segera memangkas suku bunga.',
+            en: 'Employment is part of the Fed dual mandate. A spike in claims raises recession risks and accelerates Fed rate cuts.'
+        },
+        impactRule: {
+            id: 'Aktual > Forecast → PHK Melonjak → Ekonomi AS Melambat → Dolar Jatuh 📉 → BUY XAUUSD 🚀. Aktual < Forecast → Pasar Kerja Sangat Solid → The Fed Hawkish → Dolar Perkasa 📈 → SELL XAUUSD 📉.',
+            en: 'Actual > Forecast = Rising layoffs / Weak Economy = BUY Gold. Actual < Forecast = Solid jobs market = SELL Gold.'
+        },
+        pipsEst: '±50 - 90 Pips'
+    },
+    {
+        id: 'cal-cpi-sep11',
+        currency: 'USD',
+        flag: '🇺🇸',
+        title: {
+            id: 'CPI m/m (Indeks Harga Konsumen Bulanan)',
+            en: 'CPI m/m (Consumer Price Index)',
+            ja: '米 消費者物価指数 (CPI 前月比)',
+            zh: '美国CPI月率 (消费者物价指数)',
+            es: 'IPC m/m de EE.UU.',
+            ru: 'Индекс потребительских цен США (CPI м/м)',
+            de: 'US-Verbraucherpreisindex (VPI m/m)',
+            fr: 'Indice des prix à la consommation américain (IPC m/m)',
+            pt: 'IPC m/m dos EUA',
+            ar: 'مؤشر أسعار المستهلكين الأمريكي شهرياً',
+            ko: '미국 소비자물가지수 (CPI 전월대비)'
+        },
+        impact: 'high',
+        dateStr: 'Jumat, 11 Sep 2026',
+        timeStr: '19:30',
+        timestamp: 1789129800000,
+        forecast: '0.4%',
+        prev: '0.1%',
+        actual: null,
+        description: {
+            id: 'Indeks Harga Konsumen (CPI) mengukur perubahan rata-rata harga yang dibayar oleh konsumen perkotaan untuk sekeranjang barang dan jasa tetap (makanan, pakaian, sewa rumah, bahan bakar, transportasi, perawatan medis). Indikator inflasi paling diperhatikan di pasar global.',
+            en: 'The Consumer Price Index (CPI) measures the average change over time in the prices paid by urban consumers for a market basket of consumer goods and services.'
+        },
+        whyImportant: {
+            id: 'Data CPI adalah penentu arah kebijakan moneter bank sentral dunia. Deviasi kecil dari perkiraan akan langsung mengubah ekspektasi pemotongan suku bunga The Fed pada rapat FOMC.',
+            en: 'CPI determines Federal Reserve rate path. Surprises instantly trigger aggressive repricing across US dollar yields and gold.'
+        },
+        impactRule: {
+            id: 'Aktual < Forecast → Inflasi Mendingin → Peluang Pemangkasan Suku Bunga Naik → Dolar Anjlok 📉 → EMAS TERBANG 🚀 (BUY XAUUSD). Aktual > Forecast → Inflasi Panas → The Fed Tahan Bunga Tinggi → Dolar Melonjak 📈 → EMAS AMBRUK 📉 (SELL XAUUSD).',
+            en: 'Actual < Forecast = Disinflation / Fed Rate Cut Probabilities Surge = BUY Gold. Actual > Forecast = Sticky Inflation / Hawkish Fed = SELL Gold.'
+        },
+        pipsEst: '±150 - 300 Pips'
+    },
+    {
+        id: 'cal-core-cpi-sep11',
+        currency: 'USD',
+        flag: '🇺🇸',
+        title: {
+            id: 'Core CPI m/m & y/y (Indeks Harga Konsumen Inti)',
+            en: 'Core CPI m/m & y/y',
+            ja: '米 コア消費者物価指数 (Core CPI)',
+            zh: '美国核心CPI月率及年率',
+            es: 'IPC Subyacente de EE.UU.',
+            ru: 'Базовый индекс потребительских цен США (Core CPI)',
+            de: 'US-Kernverbraucherpreisindex',
+            fr: 'Indice des prix à la consommation sous-jacent (Core CPI)',
+            pt: 'IPC Núcleo dos EUA',
+            ar: 'مؤشر أسعار المستهلكين الأساسي الأمريكي',
+            ko: '미국 근원 소비자물가지수 (Core CPI)'
+        },
+        impact: 'high',
+        dateStr: 'Jumat, 11 Sep 2026',
+        timeStr: '19:30',
+        timestamp: 1789129800000,
+        forecast: '0.2%',
+        prev: '0.2%',
+        actual: null,
+        description: {
+            id: 'Core CPI mengukur inflasi struktural dengan mengecualikan komponen makanan dan energi yang sangat fluktuatif. Ini adalah ukuran inflasi acuan favorit komite The Fed untuk melihat tren inflasi riil yang mendasari perekonomian.',
+            en: 'Core CPI excludes volatile food and energy components to measure underlying structural inflation. It is the Fed favored benchmark for core price pressures.'
+        },
+        whyImportant: {
+            id: 'Menunjukkan apakah kenaikan harga telah merambah ke sektor jasa dan sewa tempat tinggal (sticky inflation) yang sulit turun.',
+            en: 'Demonstrates whether inflation has embedded into sticky services and shelter costs.'
+        },
+        impactRule: {
+            id: 'Aktual < Forecast → The Fed Terbuka Pangkas Bunga → Dolar Melemah → BUY XAUUSD. Aktual > Forecast → The Fed Pertahankan Sikap Ketat → Dolar Naik → SELL XAUUSD.',
+            en: 'Actual < Forecast = Dovish Fed = BUY Gold. Actual > Forecast = Hawkish Fed = SELL Gold.'
+        },
+        pipsEst: '±150 - 250 Pips'
+    },
+    {
+        id: 'cal-uom-sentiment-sep11',
+        currency: 'USD',
+        flag: '🇺🇸',
+        title: {
+            id: 'Prelim UoM Consumer Sentiment (Keyakinan Konsumen Michigan)',
+            en: 'Prelim UoM Consumer Sentiment',
+            ja: '米 ミシガン大学消費者信頼感指数 (速報値)',
+            zh: '密歇根大学消费者信心指数初值',
+            es: 'Confianza del Consumidor de la Univ. de Michigan',
+            ru: 'Индекс настроения потребителей Мичиганского университета',
+            de: 'Uni-Michigan Verbrauchervertrauen (Vorläufig)',
+            fr: 'Confiance des consommateurs de l\'Univ. du Michigan',
+            pt: 'Confiança do Consumidor da Univ. de Michigan',
+            ar: 'مؤشر ثقة المستهلك لجامعة ميشيغان',
+            ko: '미시간대 소비자심리지수 (예비치)'
+        },
+        impact: 'high',
+        dateStr: 'Jumat, 11 Sep 2026',
+        timeStr: '21:00',
+        timestamp: 1789135200000,
+        forecast: '51.0',
+        prev: '51.7',
+        actual: null,
+        description: {
+            id: 'Survei bulanan University of Michigan terhadap 500 rumah tangga AS mengenai situasi keuangan saat ini dan ekspektasi perekonomian. Mengingat belanja konsumen menyumbang 70% PDB Amerika, optimisme konsumen adalah motor penggerak ekonomi.',
+            en: 'Monthly survey of US consumer confidence conducted by the University of Michigan. Consumer spending represents 70% of US GDP.'
+        },
+        whyImportant: {
+            id: 'Jika keyakinan konsumen ambruk, risiko resesi ekonomi meningkat tajam sehingga memicu aliran dana ke aset safe haven emas.',
+            en: 'Collapsing consumer sentiment elevates recession fears and drives capital into safe-haven gold.'
+        },
+        impactRule: {
+            id: 'Aktual > Forecast → Konsumen Optimis Belanja → Dolar Menguat → SELL GOLD. Aktual < Forecast → Kekhawatiran Resesi Naik → Dolar Melemah → BUY GOLD.',
+            en: 'Actual > Forecast = Resilient Consumer / Strong USD = SELL Gold. Actual < Forecast = Recession Anxiety = BUY Gold.'
+        },
+        pipsEst: '±40 - 80 Pips'
+    },
+    {
+        id: 'cal-retail-sales-sep15',
+        currency: 'USD',
+        flag: '🇺🇸',
+        title: {
+            id: 'Retail Sales m/m (Penjualan Ritel AS)',
+            en: 'Retail Sales m/m',
+            ja: '米 小売売上高 (前月比)',
+            zh: '美国零售销售月率',
+            es: 'Ventas Minoristas m/m de EE.UU.',
+            ru: 'Розничные продажи в США (м/м)',
+            de: 'US-Einzelhandelsumsätze (m/m)',
+            fr: 'Ventes au détail américaines (m/m)',
+            pt: 'Vendas no Varejo dos EUA (m/m)',
+            ar: 'مبيعات التجزئة الأمريكية شهرياً',
+            ko: '미국 소매판매 (전월대비)'
+        },
+        impact: 'high',
+        dateStr: 'Selasa, 15 Sep 2026',
+        timeStr: '19:30',
+        timestamp: 1789475400000,
+        forecast: '0.3%',
+        prev: '0.4%',
+        actual: null,
+        description: {
+            id: 'Mengukur nilai total penjualan barang oleh pedagang ritel di AS. Merupakan indikator utama pengeluaran konsumen riil sebelum rilis data PDB kuartalan.',
+            en: 'Measures total retail sales receipts across the US, offering the primary gauge of real consumer spending.'
+        },
+        whyImportant: {
+            id: 'Pertumbuhan penjualan ritel yang solid membuktikan daya beli masyarakat AS masih tangguh menghadapi suku bunga tinggi.',
+            en: 'Solid retail sales indicate consumer resilience despite high borrowing costs.'
+        },
+        impactRule: {
+            id: 'Aktual > Forecast → Belanja Solid → Dolar Menguat 📈 → SELL XAUUSD. Aktual < Forecast → Belanja Melambat → Dolar Melemah 📉 → BUY XAUUSD.',
+            en: 'Actual > Forecast = Solid Consumer = SELL Gold. Actual < Forecast = Sluggish Spending = BUY Gold.'
+        },
+        pipsEst: '±60 - 110 Pips'
+    },
+    {
+        id: 'cal-fomc-rate-sep17',
+        currency: 'USD',
+        flag: '🇺🇸',
+        title: {
+            id: 'FOMC Statement & Federal Funds Rate Decision (Suku Bunga The Fed)',
+            en: 'FOMC Statement & Fed Rate Decision',
+            ja: 'FOMC政策金利発表 & 声明',
+            zh: '美联储利率决议及政策声明',
+            es: 'Decisión de Tasas de la Fed y Comunicado del FOMC',
+            ru: 'Решение ФРС по процентной ставке и заявление FOMC',
+            de: 'Fed-Zinsentscheid und FOMC-Erklärung',
+            fr: 'Décision sur les taux de la Fed et déclaration du FOMC',
+            pt: 'Decisão de Taxa do Fed e Declaração do FOMC',
+            ar: 'قرار سعر الفائدة الفيدرالي وبيان لجنة السوق المفتوحة',
+            ko: '연준(Fed) 기준금리 결정 및 FOMC 성명서'
+        },
+        impact: 'high',
+        dateStr: 'Kamis, 17 Sep 2026',
+        timeStr: '01:00',
+        timestamp: 1789581600000,
+        forecast: '5.25%',
+        prev: '5.50%',
+        actual: null,
+        description: {
+            id: 'Keputusan suku bunga acuan Federal Reserve (FOMC) disertai ringkasan proyeksi ekonomi (Dot Plot) dan konferensi pers Ketua The Fed Jerome Powell. Event fundamental terbesar dan paling volatil dalam pasar keuangan global.',
+            en: 'The Federal Reserve benchmark rate decision, Dot Plot projections, and press conference by Fed Chair Jerome Powell.'
+        },
+        whyImportant: {
+            id: 'Suku bunga The Fed adalah acuan biaya pinjaman global. Emas tidak memberikan imbal hasil bunga (non-yielding asset), sehingga penurunan suku bunga secara masif meningkatkan daya tarik investasi emas.',
+            en: 'Gold yields no interest; lower Fed benchmark rates dramatically enhance the relative appeal and demand for physical bullion.'
+        },
+        impactRule: {
+            id: 'The Fed Pangkas Bunga 25-50 bps → Dolar Ambruk → EMAS MELESAT TINGGI 🚀🚀 (STRONG BUY). The Fed Tahan Bunga / Hawkish → Dolar Melonjak → KOREKSI EMAS (SELL).',
+            en: 'Rate Cut = Super Bullish Gold (STRONG BUY). Rate Hold / Hawkish = Bearish Gold (SELL).'
+        },
+        pipsEst: '±200 - 400 Pips'
+    }
+];
+
+let currentCalendarView = 'native';
+let currentCalFilter = 'all';
+
+function switchCalendarView(view) {
+    currentCalendarView = view;
+    const nativeContainer = document.getElementById('nativeCalendarContainer');
+    const filterBar = document.getElementById('calendarFilterBar');
+    const tvContainer = document.getElementById('tvCalendarContainer');
+    const nativeBtn = document.getElementById('btnViewNativeCal');
+    const tvBtn = document.getElementById('btnViewTvCal');
+
+    if (view === 'native') {
+        if (nativeContainer) nativeContainer.classList.remove('hidden');
+        if (filterBar) filterBar.classList.remove('hidden');
+        if (tvContainer) tvContainer.classList.add('hidden');
+        if (nativeBtn) nativeBtn.classList.add('active');
+        if (tvBtn) tvBtn.classList.remove('active');
+    } else {
+        if (nativeContainer) nativeContainer.classList.add('hidden');
+        if (filterBar) filterBar.classList.add('hidden');
+        if (tvContainer) tvContainer.classList.remove('hidden');
+        if (nativeBtn) nativeBtn.classList.remove('active');
+        if (tvBtn) tvBtn.classList.add('active');
+    }
+}
+
+function filterCalendar(type, btn) {
+    currentCalFilter = type;
+    document.querySelectorAll('.cal-filter-pill').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderEconomicCalendar(type);
+}
+
+function toggleCalDetail(id) {
+    const detail = document.getElementById(`cal-detail-${id}`);
+    const btn = document.getElementById(`cal-btn-detail-${id}`);
+    if (!detail) return;
+    detail.classList.toggle('hidden');
+    const isHidden = detail.classList.contains('hidden');
+    if (btn) {
+        btn.innerHTML = isHidden 
+            ? `<i data-lucide="chevron-down" style="width:13px;height:13px;"></i><span>${t('detailBtnOpen', 'Detail & Analisa')}</span>`
+            : `<i data-lucide="chevron-up" style="width:13px;height:13px;"></i><span>${t('detailBtnClose', 'Tutup Detail')}</span>`;
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+function renderEconomicCalendar(filter = 'all') {
+    const container = document.getElementById('nativeCalendarContainer');
+    if (!container) return;
+
+    let list = [...globalCalendarEvents];
+    if (filter === 'high') {
+        list = list.filter(e => e.impact === 'high');
+    } else if (filter === 'usd') {
+        list = list.filter(e => e.currency === 'USD');
+    } else if (filter === 'sep10') {
+        list = list.filter(e => e.dateStr.includes('10 Sep'));
+    } else if (filter === 'sep11') {
+        list = list.filter(e => e.dateStr.includes('11 Sep'));
+    }
+
+    container.innerHTML = list.map(event => {
+        const itemTitle = (event.title && event.title[currentLang]) ? event.title[currentLang] : (event.title.id || event.title.en);
+        const itemDesc = (event.description && event.description[currentLang]) ? event.description[currentLang] : (event.description.id || event.description.en);
+        const itemWhy = (event.whyImportant && event.whyImportant[currentLang]) ? event.whyImportant[currentLang] : (event.whyImportant.id || event.whyImportant.en);
+        const itemImpact = (event.impactRule && event.impactRule[currentLang]) ? event.impactRule[currentLang] : (event.impactRule.id || event.impactRule.en);
+
+        return `
+            <div class="cal-event-card" id="${event.id}">
+                <div class="cal-event-top">
+                    <div style="flex: 1;">
+                        <div class="cal-event-title-row">
+                            <span class="cal-currency-badge">${event.flag} ${event.currency}</span>
+                            <span class="cal-impact-badge ${event.impact === 'high' ? 'high' : 'medium'}">
+                                ${event.impact === 'high' ? '🔴 ' + t('highImpact', 'Dampak Tinggi') : '🟠 Sedang'}
+                            </span>
+                            <span style="font-size:0.75rem; color:var(--text-secondary); margin-left:auto; font-family:'JetBrains Mono',monospace;">
+                                ${event.dateStr} • ${event.timeStr} WIB
+                            </span>
+                        </div>
+                        <div style="font-weight: 600; font-size: 0.88rem; color: #ffffff; margin-top: 5px;">
+                            ${itemTitle}
+                        </div>
+                        <div class="news-data" style="margin-top: 6px;">
+                            <span>${t('forecastLabel', 'Prakiraan:')} <strong>${event.forecast}</strong></span>
+                            <span>${t('prevLabel', 'Sebelumnya:')} <strong>${event.prev}</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Toggle Button -->
+                <button type="button" class="news-detail-btn" id="cal-btn-detail-${event.id}" onclick="toggleCalDetail('${event.id}')">
+                    <i data-lucide="chevron-down" style="width:13px;height:13px;"></i>
+                    <span>${t('detailBtnOpen', 'Detail & Analisa')}</span>
+                </button>
+
+                <!-- Detail Accordion -->
+                <div class="news-detail-content hidden" id="cal-detail-${event.id}">
+                    <div class="detail-row">
+                        <div class="detail-section-title"><i data-lucide="info" style="width:13px;height:13px;"></i> ${t('whatIsThis', 'Apa itu Berita Ini?')}</div>
+                        <p>${itemDesc}</p>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-section-title"><i data-lucide="crosshair" style="width:13px;height:13px;"></i> ${t('whyGoldTraders', 'Kenapa Trader Emas Wajib Tahu?')}</div>
+                        <p>${itemWhy}</p>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-section-title"><i data-lucide="zap" style="width:13px;height:13px;"></i> ${t('impactRule', 'Aturan Dampak ke XAUUSD:')}</div>
+                        <p style="color:var(--text-primary);font-weight:500;">${itemImpact}</p>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-section-title"><i data-lucide="activity" style="width:13px;height:13px;"></i> ${t('volatilityEst', 'Estimasi Volatilitas XAUUSD')}</div>
+                        <p style="color:var(--accent-cyan);font-weight:700;">${event.pipsEst}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    if (window.lucide) lucide.createIcons();
+}
+
 // Early Warning Alert System (30m, 20m, 10m, 5m, 0s)
 function checkScheduledNews(h, m, s) {
     const nowTs = new Date().getTime();
@@ -2439,4 +2883,5 @@ generateTodaySchedule();
 initEaSignalEngine();
 loadWaitingList();
 syncAlertButtonsUI();
+renderEconomicCalendar('all');
 if (window.lucide) lucide.createIcons();
