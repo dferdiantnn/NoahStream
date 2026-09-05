@@ -340,13 +340,30 @@
                             <p>Ekonomi Melambat &rarr; The Fed Pangkas Bunga &rarr; <span class="text-bearish">USD TURUN 📉</span> | <span class="text-bullish">GOLD TERBANG 🚀 (BUY XAU)</span></p>
                         </div>
                     </div>
-                    <div class="alert-stages-indicator">
-                        <span><i data-lucide="bell-ring" style="width:12px;height:12px;color:var(--accent-gold);"></i> <strong>Early Warning Alerts:</strong></span>
-                        <span class="stage-tag">T-30m</span>
-                        <span class="stage-tag">T-20m</span>
-                        <span class="stage-tag">T-10m</span>
-                        <span class="stage-tag">T-5m</span>
-                        <span class="stage-tag pulse">T-0s (Data Release)</span>
+                    <div class="alert-stages-indicator" style="flex-direction:column;align-items:flex-start;gap:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                            <span><i data-lucide="bell-ring" style="width:12px;height:12px;color:var(--accent-gold);"></i> <strong>Early Warning Alerts Timing:</strong></span>
+                            <span style="font-size:0.65rem;color:var(--text-muted);">(Pilih interval bunyi notifikasi)</span>
+                        </div>
+                        <div class="alert-timing-options" style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <label class="alert-time-pill active" onclick="toggleAlertSetting('30m', this)">
+                                <input type="checkbox" id="alert_30m" checked style="display:none;" />
+                                <span>🔔 30 Menit</span>
+                            </label>
+                            <label class="alert-time-pill active" onclick="toggleAlertSetting('20m', this)">
+                                <input type="checkbox" id="alert_20m" checked style="display:none;" />
+                                <span>🔔 20 Menit</span>
+                            </label>
+                            <label class="alert-time-pill active" onclick="toggleAlertSetting('10m', this)">
+                                <input type="checkbox" id="alert_10m" checked style="display:none;" />
+                                <span>🔔 10 Menit</span>
+                            </label>
+                            <label class="alert-time-pill active" onclick="toggleAlertSetting('5m', this)">
+                                <input type="checkbox" id="alert_5m" checked style="display:none;" />
+                                <span>🔔 5 Menit</span>
+                            </label>
+                            <span class="stage-tag pulse" style="margin-left:auto;">⚡ Saat Data Rilis (T-0)</span>
+                        </div>
                     </div>
                 </div>
 

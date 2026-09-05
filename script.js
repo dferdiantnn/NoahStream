@@ -985,26 +985,26 @@ function checkScheduledNews(h, m, s) {
         const diffSec = Math.floor((news.targetTimestamp - nowTs) / 1000);
         
         if (!news.isReleased) {
-            // Early Warnings Stages:
+            // Early Warnings Stages (Respecting User Toggle Choices):
             // 30 Menit (1800s)
             if (diffSec <= 1800 && diffSec > 1740 && !news.notifiedStages.has('30m')) {
                 news.notifiedStages.add('30m');
-                triggerEarlyWarning(news, '30 Menit');
+                if (userAlertPreferences['30m']) triggerEarlyWarning(news, '30 Menit');
             }
             // 20 Menit (1200s)
             else if (diffSec <= 1200 && diffSec > 1140 && !news.notifiedStages.has('20m')) {
                 news.notifiedStages.add('20m');
-                triggerEarlyWarning(news, '20 Menit');
+                if (userAlertPreferences['20m']) triggerEarlyWarning(news, '20 Menit');
             }
             // 10 Menit (600s)
             else if (diffSec <= 600 && diffSec > 540 && !news.notifiedStages.has('10m')) {
                 news.notifiedStages.add('10m');
-                triggerEarlyWarning(news, '10 Menit');
+                if (userAlertPreferences['10m']) triggerEarlyWarning(news, '10 Menit');
             }
             // 5 Menit (300s)
             else if (diffSec <= 300 && diffSec > 240 && !news.notifiedStages.has('5m')) {
                 news.notifiedStages.add('5m');
-                triggerEarlyWarning(news, '5 Menit (Siap-Siap!)');
+                if (userAlertPreferences['5m']) triggerEarlyWarning(news, '5 Menit (Siap-Siap!)');
             }
             // 15 Detik (Demo Trigger untuk pengujian instan)
             else if (diffSec <= 15 && diffSec > 0 && !news.notifiedStages.has('15s') && news.id.includes('demo')) {
@@ -1097,15 +1097,49 @@ const eaHistoricalLogs = [
     { time: '16:08:15', type: 'SELL', signal: 'Bearish Pin Bar Rejection', price: '2,652.50', result: '+24 Pips' }
 ];
 
+let userAlertPreferences = {
+    '30m': true,
+    '20m': true,
+    '10m': true,
+    '5m': true
+};
+
+function toggleAlertSetting(stage, element) {
+    userAlertPreferences[stage] = !userAlertPreferences[stage];
+    if (userAlertPreferences[stage]) {
+        element.classList.add('active');
+        showToastNotification(`Alert T-${stage} diaktifkan.`, 'Alert Setting');
+    } else {
+        element.classList.remove('active');
+        showToastNotification(`Alert T-${stage} dinonaktifkan.`, 'Alert Setting');
+    }
+}
+
+// ==========================================================================
+// REAL-TIME NOAH ALGO EA SIGNAL ENGINE
+// ==========================================================================
+const eaHistoricalLogs = [
+    { time: '16:34:10', type: 'SELL', signal: 'NFP Strong Data Drop', price: '4,438.50', result: '+45 Pips' },
+    { time: '16:22:45', type: 'SELL', signal: 'Resistance Zone Rejection', price: '4,442.20', result: '+32 Pips' },
+    { time: '16:08:15', type: 'BUY', signal: 'Support Level Bounce', price: '4,418.50', result: '+28 Pips' }
+];
+
+function isWeekendMarketClosed() {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Minggu, 6 = Sabtu
+    const hours = now.getHours();
+    // Market Forex/Gold tutup dari Sabtu 04:00 WIB hingga Senin 05:00 WIB
+    if (day === 6 && hours >= 4) return true; // Sabtu setelah subuh
+    if (day === 0) return true; // Minggu seharian
+    if (day === 1 && hours < 5) return true; // Senin sebelum subuh
+    return false;
+}
+
 function initEaSignalEngine() {
     renderEaLogs();
     
-    // Simulate real-time EA dynamic market calculations every 4.5 seconds
+    // Simulate real-time EA dynamic market calculations
     setInterval(() => {
-        const rand = Math.random();
-        const basePrice = (2644 + (Math.random() * 8)).toFixed(2);
-        const rsiVal = (45 + Math.random() * 32).toFixed(1);
-        
         const badge = document.getElementById('eaOverallBadge');
         const trend = document.getElementById('eaTrendBias');
         const rsiEl = document.getElementById('eaRsiVal');
@@ -1113,6 +1147,32 @@ function initEaSignalEngine() {
         const actionEl = document.getElementById('eaAction');
 
         if (!badge || !trend || !rsiEl) return;
+
+        // CEK APAKAH MARKET SEDANG TUTUP (WEEKEND)
+        if (isWeekendMarketClosed()) {
+            badge.className = 'ea-master-badge';
+            badge.style.background = 'rgba(255, 255, 255, 0.08)';
+            badge.style.color = 'var(--text-muted)';
+            badge.style.borderColor = 'var(--border-subtle)';
+            badge.innerHTML = `<i data-lucide="pause-circle"></i><span>MARKET CLOSED (WEEKEND)</span>`;
+            trend.className = 'ea-card-val';
+            trend.style.color = 'var(--text-muted)';
+            trend.innerText = '⏸️ Market Freeze (Weekend)';
+            rsiEl.className = 'ea-card-val';
+            rsiEl.style.color = 'var(--text-secondary)';
+            rsiEl.innerText = '48.2 (Market Closed)';
+            actionEl.className = 'ea-card-val';
+            actionEl.style.color = 'var(--text-muted)';
+            actionEl.innerText = 'WAIT FOR MARKET OPEN';
+            rangeEl.innerText = '4,416.70 - 4,440.00 (Closing)';
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        // Market Sedang Buka (Senin - Jumat)
+        const rand = Math.random();
+        const basePrice = (4425 + (Math.random() * 12)).toFixed(2); // Accurate 4,400+ Baseline
+        const rsiVal = (42 + Math.random() * 36).toFixed(1);
 
         if (rsiVal > 55) { // BULLISH BIAS
             badge.className = 'ea-master-badge signal-bullish';
@@ -1123,7 +1183,7 @@ function initEaSignalEngine() {
             rsiEl.innerText = `${rsiVal} (Bullish Zone)`;
             actionEl.className = 'ea-card-val text-bullish';
             actionEl.innerText = 'BUY ON PULLBACK';
-            rangeEl.innerText = `${basePrice} - ${(parseFloat(basePrice) + 12).toFixed(2)}`;
+            rangeEl.innerText = `${basePrice} - ${(parseFloat(basePrice) + 18).toFixed(2)}`;
         } else { // BEARISH BIAS
             badge.className = 'ea-master-badge signal-bearish';
             badge.innerHTML = `<i data-lucide="trending-down"></i><span>BEARISH PRESSURE</span>`;
@@ -1133,7 +1193,7 @@ function initEaSignalEngine() {
             rsiEl.innerText = `${rsiVal} (Bearish Zone)`;
             actionEl.className = 'ea-card-val text-bearish';
             actionEl.innerText = 'SELL ON RALLY';
-            rangeEl.innerText = `${(parseFloat(basePrice) - 10).toFixed(2)} - ${basePrice}`;
+            rangeEl.innerText = `${(parseFloat(basePrice) - 16).toFixed(2)} - ${basePrice}`;
         }
 
         // Randomly push new EA triggered signals (every ~18s)

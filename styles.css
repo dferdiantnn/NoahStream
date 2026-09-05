@@ -1486,15 +1486,13 @@ main {
     width: 560px;
     height: 680px;
     max-height: calc(100vh - 90px);
-    background: rgba(16, 16, 22, 0.95);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
+    background: #0f1117; /* Solid dark background to prevent bleed-through */
     border: 1px solid var(--border-highlight);
     border-radius: var(--radius-lg);
     z-index: 999;
     display: flex;
     flex-direction: column;
-    box-shadow: var(--shadow-lg), 0 0 40px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.08);
     transition: transform var(--transition-smooth), opacity var(--transition-smooth);
     overflow: hidden;
 }
@@ -1888,6 +1886,31 @@ main {
     border: 1px solid var(--border-subtle);
     font-size: 0.7rem;
     flex-wrap: wrap;
+}
+
+.alert-time-pill {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    transition: all var(--transition-fast);
+}
+
+.alert-time-pill:hover {
+    border-color: var(--border-highlight);
+    color: var(--text-primary);
+}
+
+.alert-time-pill.active {
+    background: rgba(245, 158, 11, 0.18);
+    border-color: var(--accent-gold);
+    color: #fde68a;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
 }
 
 .stage-tag {
