@@ -1964,40 +1964,64 @@ main {
     flex-wrap: wrap;
 }
 
-.alert-time-pill {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+/* Alert Timing Interactive Toggle Buttons */
+.alert-toggle-btn {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: #64748b;
-    opacity: 0.45;
-    padding: 4px 12px;
+    opacity: 0.5;
+    padding: 5px 12px;
     border-radius: var(--radius-full);
     font-size: 0.72rem;
     font-weight: 600;
     cursor: pointer;
     user-select: none;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    filter: grayscale(80%);
+    gap: 6px;
+    filter: grayscale(100%);
 }
 
-.alert-time-pill:hover {
-    opacity: 0.75;
-    border-color: rgba(245, 158, 11, 0.3);
+.alert-toggle-btn .toggle-status-badge {
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(255, 255, 255, 0.08);
     color: #94a3b8;
-    filter: grayscale(30%);
 }
 
-.alert-time-pill.active {
-    background: rgba(245, 158, 11, 0.22);
-    border-color: #f59e0b;
-    color: #fef08a;
-    opacity: 1;
-    font-weight: 700;
-    box-shadow: 0 0 14px rgba(245, 158, 11, 0.45), inset 0 0 8px rgba(245, 158, 11, 0.15);
-    filter: grayscale(0%);
-    text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+.alert-toggle-btn:hover {
+    opacity: 0.8;
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #cbd5e1;
+    filter: grayscale(40%);
+}
+
+/* ACTIVE STATE: Radiant Gold Glow with Vibrant ON Badge */
+.alert-toggle-btn.active {
+    background: rgba(245, 158, 11, 0.22) !important;
+    border-color: #f59e0b !important;
+    color: #fef08a !important;
+    opacity: 1 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.45), inset 0 0 8px rgba(245, 158, 11, 0.2) !important;
+    filter: grayscale(0%) !important;
+    text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+.alert-toggle-btn.active .toggle-status-badge {
+    background: #f59e0b !important;
+    color: #000000 !important;
+    font-weight: 900 !important;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+/* Backward compatibility for any old class */
+.alert-time-pill {
+    display: none;
 }
 
 .stage-tag {

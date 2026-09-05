@@ -1405,15 +1405,29 @@ let userAlertPreferences = {
     '5m': true
 };
 
-function toggleAlertSetting(stage, element) {
+function toggleAlertSetting(stage) {
     userAlertPreferences[stage] = !userAlertPreferences[stage];
-    if (userAlertPreferences[stage]) {
-        element.classList.add('active');
-        showToastNotification(`Alert T-${stage} diaktifkan.`, 'Alert Setting');
-    } else {
-        element.classList.remove('active');
-        showToastNotification(`Alert T-${stage} dinonaktifkan.`, 'Alert Setting');
+    const btn = document.getElementById(`btn_alert_${stage}`);
+    const isEnabled = userAlertPreferences[stage];
+    
+    if (btn) {
+        const badge = btn.querySelector('.toggle-status-badge');
+        const icon = btn.querySelector('.toggle-icon');
+        if (isEnabled) {
+            btn.classList.add('active');
+            if (badge) badge.innerText = 'ON';
+            if (icon) icon.innerText = '🔔';
+        } else {
+            btn.classList.remove('active');
+            if (badge) badge.innerText = 'OFF';
+            if (icon) icon.innerText = '🔕';
+        }
     }
+    
+    showToastNotification(
+        isEnabled ? `Alert T-${stage} diaktifkan (ON).` : `Alert T-${stage} dinonaktifkan (OFF).`,
+        'Alert Setting'
+    );
 }
 
 const eaHistoricalLogs = [
