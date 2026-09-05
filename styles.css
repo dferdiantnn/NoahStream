@@ -80,6 +80,10 @@ body {
     display: none !important;
 }
 
+.hidden {
+    display: none !important;
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
     width: 6px;
