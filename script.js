@@ -39,7 +39,72 @@ window.addEventListener('keydown', (e) => {
 });
 
 function toggleNewsPanel() {
-    document.getElementById('newsPanel').classList.toggle('hidden');
+    const panel = document.getElementById('newsPanel');
+    if (panel) {
+        panel.classList.toggle('hidden');
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+function openNewsTab(tabId = 'tabNews', isMini = false) {
+    const panel = document.getElementById('newsPanel');
+    if (!panel) return;
+    
+    panel.classList.remove('hidden');
+    if (isMini) {
+        panel.classList.add('mini-dashboard');
+        const miniBtn = document.getElementById('miniDashboardToggleBtn');
+        if (miniBtn) miniBtn.innerHTML = `<i data-lucide="maximize-2"></i><span>Full View</span>`;
+    }
+    
+    // Switch to target tab
+    const tabs = document.querySelectorAll('.tab-pane');
+    tabs.forEach(tab => tab.classList.remove('active'));
+    
+    const btns = document.querySelectorAll('.tab-btn');
+    btns.forEach(btn => btn.classList.remove('active'));
+    
+    const targetPane = document.getElementById(tabId);
+    if (targetPane) targetPane.classList.add('active');
+    
+    const targetBtn = Array.from(btns).find(b => b.getAttribute('onclick')?.includes(tabId));
+    if (targetBtn) targetBtn.classList.add('active');
+    
+    if (window.lucide) lucide.createIcons();
+}
+
+function toggleMiniDashboard() {
+    const panel = document.getElementById('newsPanel');
+    const miniBtn = document.getElementById('miniDashboardToggleBtn');
+    if (!panel) return;
+    
+    const isMini = panel.classList.toggle('mini-dashboard');
+    if (miniBtn) {
+        miniBtn.innerHTML = isMini 
+            ? `<i data-lucide="maximize-2"></i><span>Full View</span>` 
+            : `<i data-lucide="minimize-2"></i><span>Mini View</span>`;
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+function clearAllToasts() {
+    const list = document.getElementById('toastList');
+    if (list) list.innerHTML = '';
+    const header = document.getElementById('toastActionHeader');
+    if (header) header.classList.add('hidden');
+}
+
+function removeToast(toastElement) {
+    if (!toastElement) return;
+    toastElement.classList.remove('show');
+    setTimeout(() => {
+        toastElement.remove();
+        const list = document.getElementById('toastList');
+        const header = document.getElementById('toastActionHeader');
+        if (list && list.children.length === 0 && header) {
+            header.classList.add('hidden');
+        }
+    }, 300);
 }
 
 function openLiveDiscoveryModal() {
@@ -210,20 +275,30 @@ function showToastNotification(message, title = 'Notice') {
     toast.className = 'toast show';
     toast.innerHTML = `
         <div class="toast-header">
-            <span><i data-lucide="info" style="width:14px;height:14px;color:var(--primary);margin-right:6px;"></i>${title}</span>
-            <span class="time">Just now</span>
+            <div class="toast-header-left">
+                <i data-lucide="info" style="width:14px;height:14px;color:var(--primary);flex-shrink:0;"></i>
+                <span class="toast-header-title">${title}</span>
+            </div>
+            <div class="toast-header-right">
+                <span class="time">Just now</span>
+                <button class="toast-close-btn" title="Dismiss Alert" onclick="event.stopPropagation(); removeToast(this.closest('.toast'))">
+                    <i data-lucide="x" style="width:11px;height:11px;"></i>
+                </button>
+            </div>
         </div>
         <div class="toast-body">
             <div>${message}</div>
         </div>
     `;
-    const container = document.getElementById('toastContainer');
-    if (container) {
-        container.appendChild(toast);
+    
+    const list = document.getElementById('toastList');
+    const header = document.getElementById('toastActionHeader');
+    if (list) {
+        list.appendChild(toast);
+        if (header) header.classList.remove('hidden');
         if (window.lucide) lucide.createIcons();
         setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 400);
+            removeToast(toast);
         }, 5000);
     }
 }
@@ -1082,8 +1157,8 @@ function checkScheduledNews(h, m, s) {
                 news.notifiedStages.add('15s');
                 triggerEarlyWarning(news, '15 Detik (Hitungan Mundur!)');
             }
-            // T-0: RELEASE TIME!
-            else if (diffSec <= 0) {
+            // T-0: RELEASE TIME! (Hanya trigger jika memang ada nilai actual atau target waktu pas tercapai)
+            else if (diffSec <= 0 && news.actual && news.actual !== 'null' && news.actual !== 'None') {
                 triggerNewsNotification(news);
             }
         }
@@ -1095,10 +1170,19 @@ function triggerEarlyWarning(news, timeLeftStr) {
     
     const toast = document.createElement('div');
     toast.className = 'toast show';
+    toast.onclick = () => openNewsTab('tabNews', true);
     toast.innerHTML = `
         <div class="toast-header" style="color:var(--accent-gold);">
-            <span><i data-lucide="alert-triangle" style="width:14px;height:14px;color:var(--accent-gold);margin-right:6px;"></i>EARLY ALERT: ${news.title}</span>
-            <span class="time" style="background:rgba(245,158,11,0.2);padding:1px 6px;border-radius:4px;">T - ${timeLeftStr}</span>
+            <div class="toast-header-left">
+                <i data-lucide="alert-triangle" style="width:14px;height:14px;color:var(--accent-gold);flex-shrink:0;"></i>
+                <span class="toast-header-title">EARLY ALERT: ${news.title}</span>
+            </div>
+            <div class="toast-header-right">
+                <span class="time" style="background:rgba(245,158,11,0.2);padding:1px 6px;border-radius:4px;">T - ${timeLeftStr}</span>
+                <button class="toast-close-btn" title="Dismiss Alert" onclick="event.stopPropagation(); removeToast(this.closest('.toast'))">
+                    <i data-lucide="x" style="width:11px;height:11px;"></i>
+                </button>
+            </div>
         </div>
         <div class="toast-body">
             <div style="font-size:0.75rem;line-height:1.4;">
@@ -1107,18 +1191,20 @@ function triggerEarlyWarning(news, timeLeftStr) {
                     ⚡ <strong>Prediksi Otomatis:</strong> Siapkan posisi! Jika Data > Forecast &rarr; Gold Jatuh. Jika Data < Forecast &rarr; Gold Terbang.
                 </div>
             </div>
+            <div class="toast-cta-hint"><i data-lucide="external-link" style="width:11px;height:11px;"></i> Klik untuk buka mini dashboard news</div>
             <div class="toast-progress"><div class="toast-progress-bar" style="background:var(--accent-gold);"></div></div>
         </div>
     `;
     
-    const container = document.getElementById('toastContainer');
-    if (container) {
-        container.appendChild(toast);
+    const list = document.getElementById('toastList');
+    const header = document.getElementById('toastActionHeader');
+    if (list) {
+        list.appendChild(toast);
+        if (header) header.classList.remove('hidden');
         if (window.lucide) lucide.createIcons();
         setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 400);
-        }, 8000);
+            removeToast(toast);
+        }, 10000);
     }
 }
 
@@ -1131,31 +1217,50 @@ function triggerNewsNotification(news) {
     // Show Release Toast
     const toast = document.createElement('div');
     toast.className = 'toast show';
+    toast.onclick = () => openNewsTab('tabNews', true);
+    
+    const actualDisplay = (news.actual && news.actual !== 'null' && news.actual !== 'None') ? news.actual : 'Menunggu Rilis';
+    const actionGuideDisplay = news.actionGuide || 'ANALISIS POSISI';
+    const confDisplay = news.xauProb || 80;
+    const usdStatusDisplay = news.usdStatus || 'USD Netral';
+    const iconDisplay = news.icon || '⚡';
+    const impactClassDisplay = news.impactClass || 'impact-up';
+
     toast.innerHTML = `
         <div class="toast-header" style="color:#ffffff;">
-            <span><i data-lucide="zap" style="width:14px;height:14px;color:var(--primary);margin-right:6px;"></i>DATA RILIS: ${news.title}</span>
-            <span class="time">${news.timeStr}</span>
+            <div class="toast-header-left">
+                <i data-lucide="zap" style="width:14px;height:14px;color:var(--primary);flex-shrink:0;"></i>
+                <span class="toast-header-title">DATA RILIS: ${news.title}</span>
+            </div>
+            <div class="toast-header-right">
+                <span class="time">${news.timeStr}</span>
+                <button class="toast-close-btn" title="Dismiss Alert" onclick="event.stopPropagation(); removeToast(this.closest('.toast'))">
+                    <i data-lucide="x" style="width:11px;height:11px;"></i>
+                </button>
+            </div>
         </div>
         <div class="toast-body">
-            <div><strong>Actual:</strong> <span style="font-size:0.9rem;font-weight:800;color:#fff;">${news.actual}</span> (Frcst: ${news.forecast})</div>
+            <div><strong>Actual:</strong> <span style="font-size:0.9rem;font-weight:800;color:#fff;">${actualDisplay}</span> (Frcst: ${news.forecast})</div>
             <div style="margin-top: 6px; padding: 8px 10px; background: rgba(0,0,0,0.5); border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
-                <div style="font-size:0.72rem;color:var(--text-muted);">${news.usdStatus}</div>
-                <div class="${news.impactClass}" style="font-size:0.82rem;font-weight:800;margin-top:2px;">
-                    ${news.icon} REKOMENDASI: ${news.actionGuide} (${news.xauProb}%)
+                <div style="font-size:0.72rem;color:var(--text-muted);">${usdStatusDisplay}</div>
+                <div class="${impactClassDisplay}" style="font-size:0.82rem;font-weight:800;margin-top:2px;">
+                    ${iconDisplay} REKOMENDASI: ${actionGuideDisplay} (${confDisplay}%)
                 </div>
             </div>
+            <div class="toast-cta-hint"><i data-lucide="external-link" style="width:11px;height:11px;"></i> Klik untuk buka mini dashboard news</div>
             <div class="toast-progress"><div class="toast-progress-bar"></div></div>
         </div>
     `;
     
-    const container = document.getElementById('toastContainer');
-    if (container) {
-        container.appendChild(toast);
+    const list = document.getElementById('toastList');
+    const header = document.getElementById('toastActionHeader');
+    if (list) {
+        list.appendChild(toast);
+        if (header) header.classList.remove('hidden');
         if (window.lucide) lucide.createIcons();
         renderNewsDashboard();
         setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 400);
+            removeToast(toast);
         }, 12000);
     }
 }

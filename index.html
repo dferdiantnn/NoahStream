@@ -258,11 +258,17 @@
         <div class="news-header">
             <div class="news-header-title">
                 <i data-lucide="calendar"></i>
-                <span>Market Intelligence</span>
+                <span id="newsPanelTitleText">Market Intelligence</span>
             </div>
-            <button class="btn-close-panel" onclick="toggleNewsPanel()" title="Close Panel">
-                <i data-lucide="x"></i>
-            </button>
+            <div class="news-header-actions">
+                <button id="miniDashboardToggleBtn" class="btn-panel-action" onclick="toggleMiniDashboard()" title="Toggle Compact / Mini Dashboard Mode">
+                    <i data-lucide="minimize-2"></i>
+                    <span>Mini View</span>
+                </button>
+                <button class="btn-close-panel" onclick="toggleNewsPanel()" title="Close Panel">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
         </div>
         <div class="news-content">
             <div class="tab-buttons">
@@ -441,8 +447,16 @@
         <div class="grid-container" id="streamGrid"></div>
     </main>
 
-    <!-- Toast Notification Container -->
-    <div id="toastContainer" class="toast-container"></div>
+    <!-- Toast Notification Container with Quick Dismiss & Clear All -->
+    <div id="toastContainer" class="toast-container">
+        <div id="toastActionHeader" class="toast-action-header hidden">
+            <button class="btn-clear-all-toasts" onclick="clearAllToasts()">
+                <i data-lucide="trash-2"></i>
+                <span>Clear All Alerts</span>
+            </button>
+        </div>
+        <div id="toastList" class="toast-list"></div>
+    </div>
 
     <!-- Script API wajib dipanggil di HTML -->
     <script src="https://www.youtube.com/iframe_api"></script>
