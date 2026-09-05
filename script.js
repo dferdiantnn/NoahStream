@@ -840,12 +840,12 @@ function generateTodaySchedule() {
     const now = new Date();
     scheduledNews = [];
     
-    // Static schedule across a 24h day
+    // High-Impact Economic News Schedule
     const timeSlots = [
-        { title: "CPI m/m", h: 8, m: 30, s: 0, forecast: "0.2%", prev: "0.3%", actualBase: 0.2, unit: "%" },
-        { title: "Non Farm Payrolls", h: 14, m: 0, s: 0, forecast: "180K", prev: "175K", actualBase: 180, unit: "K" },
-        { title: "Fed Interest Rate", h: 19, m: 30, s: 0, forecast: "5.50%", prev: "5.50%", actualBase: 5.5, unit: "%" },
-        { title: "Unemployment Rate", h: 21, m: 0, s: 0, forecast: "3.9%", prev: "3.9%", actualBase: 3.9, unit: "%" }
+        { title: "Non-Farm Payrolls (NFP)", h: 19, m: 30, s: 0, forecast: "180K", prev: "175K", actualBase: 180, unit: "K", impact: "high" },
+        { title: "US Unemployment Rate", h: 19, m: 30, s: 0, forecast: "3.9%", prev: "4.0%", actualBase: 3.9, unit: "%", impact: "high" },
+        { title: "US Core CPI m/m", h: 20, m: 0, s: 0, forecast: "0.2%", prev: "0.3%", actualBase: 0.2, unit: "%", impact: "high" },
+        { title: "Fed Interest Rate Decision", h: 21, m: 0, s: 0, forecast: "5.50%", prev: "5.50%", actualBase: 5.5, unit: "%", impact: "high" }
     ];
     
     timeSlots.forEach((slot, index) => {
@@ -855,13 +855,15 @@ function generateTodaySchedule() {
         scheduledNews.push({
             id: `news-static-${index}`,
             timeStr: timeStr,
+            targetTimestamp: scheduleTime.getTime(),
             isReleased: now >= scheduleTime,
+            notifiedStages: new Set(),
             ...slot
         });
     });
     
-    // Add one fake event that fires 15 seconds from NOW for demonstration purposes
-    const demoTime = new Date(now.getTime() + 15000); 
+    // Demonstration event starting in 45 seconds to showcase 30s/15s early alert and auto-prediction
+    const demoTime = new Date(now.getTime() + 45000); 
     const dh = String(demoTime.getHours()).padStart(2, '0');
     const dm = String(demoTime.getMinutes()).padStart(2, '0');
     const ds = String(demoTime.getSeconds()).padStart(2, '0');
@@ -869,9 +871,15 @@ function generateTodaySchedule() {
     scheduledNews.push({
         id: `news-demo`,
         timeStr: `${dh}:${dm}:${ds}`,
+        targetTimestamp: demoTime.getTime(),
         isReleased: false,
-        title: "Retail Sales m/m (DEMO)",
-        forecast: "0.4%", prev: "0.3%", actualBase: 0.4, unit: "%"
+        notifiedStages: new Set(),
+        title: "Non-Farm Payrolls (LIVE DEMO)",
+        forecast: "185K", 
+        prev: "175K", 
+        actualBase: 185, 
+        unit: "K",
+        impact: "high"
     });
     
     // Sort chronologically
@@ -889,21 +897,27 @@ function generateTodaySchedule() {
 
 function simulateNewsResult(news) {
     let deviation = (Math.random() - 0.5) * 0.2;
-    if (news.unit === "K") deviation = (Math.random() - 0.5) * 20;
+    if (news.unit === "K") deviation = (Math.random() - 0.5) * 25;
     
     news.actual = (news.actualBase + deviation).toFixed(1) + news.unit;
     
     let actualNum = parseFloat(news.actual);
     let forecastNum = parseFloat(news.forecast);
-    let isBetterForUSD = actualNum > forecastNum;
+    
+    // MRKT AI Rules:
+    // If NFP / Jobs / Rate > Forecast -> Strong USD -> Gold DOWN (Sell XAUUSD)
+    // If Unemployment > Forecast -> Weak USD -> Gold UP (Buy XAUUSD)
+    let isUsdStrong = actualNum > forecastNum;
     if (news.title.includes("Unemployment")) {
-        isBetterForUSD = actualNum < forecastNum;
+        isUsdStrong = actualNum < forecastNum;
     }
     
-    news.xauImpact = isBetterForUSD ? "DOWN" : "UP";
-    news.xauProb = Math.floor(65 + Math.random() * 25);
-    news.impactClass = isBetterForUSD ? "impact-down" : "impact-up";
-    news.icon = isBetterForUSD ? "📉" : "📈";
+    news.xauImpact = isUsdStrong ? "BEARISH / SELL (DOWN)" : "BULLISH / BUY (UP)";
+    news.xauProb = Math.floor(75 + Math.random() * 20);
+    news.impactClass = isUsdStrong ? "impact-down" : "impact-up";
+    news.icon = isUsdStrong ? "📉" : "🚀";
+    news.usdStatus = isUsdStrong ? "USD KUAT (Hawkish / Tahan Bunga)" : "USD LEMAH (Dovish / Potong Bunga)";
+    news.actionGuide = isUsdStrong ? "SELL GOLD (XAUUSD)" : "BUY GOLD (XAUUSD)";
 }
 
 function renderNewsDashboard() {
@@ -920,19 +934,32 @@ function renderNewsDashboard() {
         
         let statusHtml = news.isReleased 
             ? `<div class="news-status status-released" id="status-${news.id}">RELEASED</div>` 
-            : `<div class="news-status status-pending" id="status-${news.id}">Pending</div>`;
+            : `<div class="news-status status-pending" id="status-${news.id}">Upcoming</div>`;
             
         let resultHtml = news.isReleased 
-            ? `<strong>Actual:</strong> ${news.actual} &rarr; <span class="${news.impactClass}">XAUUSD ${news.xauImpact} (${news.xauProb}%)</span>`
-            : `Waiting for release...`;
+            ? `
+                <div style="font-size:0.75rem;line-height:1.4;">
+                    <div><strong>Actual:</strong> <span style="color:#fff;font-weight:700;">${news.actual}</span> (Frcst: ${news.forecast}) &bull; <strong>${news.usdStatus}</strong></div>
+                    <div style="margin-top:4px;">
+                        <span class="${news.impactClass}" style="font-size:0.76rem;font-weight:800;">${news.icon} REKOMENDASI: ${news.actionGuide} (${news.xauProb}% Conf.)</span>
+                    </div>
+                </div>
+            `
+            : `
+                <div style="font-size:0.72rem;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center;">
+                    <span>Menunggu rilis data resmi...</span>
+                    <span style="color:var(--accent-gold);font-weight:600;"><i data-lucide="bell" style="width:11px;height:11px;"></i> Alert 30m, 20m, 10m, 5m aktif</span>
+                </div>
+            `;
         
         item.innerHTML = `
             <div class="news-item-top">
                 <div>
                     <div class="news-title">${news.title}</div>
                     <div class="news-data">
-                        <span>Frcst: ${news.forecast}</span>
-                        <span>Prev: ${news.prev}</span>
+                        <span>Forecast: <strong>${news.forecast}</strong></span>
+                        <span>Previous: <strong>${news.prev}</strong></span>
+                        <span style="color:var(--primary);font-weight:700;">• High Impact</span>
                     </div>
                 </div>
                 <div style="text-align: right;">
@@ -946,34 +973,104 @@ function renderNewsDashboard() {
         `;
         container.appendChild(item);
     });
+    if (window.lucide) lucide.createIcons();
 }
 
+// Early Warning Alert System (30m, 20m, 10m, 5m, 0s)
 function checkScheduledNews(h, m, s) {
-    const currentStr = `${h}:${m}:${s}`;
+    const nowTs = new Date().getTime();
     
     scheduledNews.forEach(news => {
-        if (!news.isReleased && news.timeStr === currentStr) {
-            triggerNewsNotification(news);
+        if (!news.targetTimestamp) return;
+        const diffSec = Math.floor((news.targetTimestamp - nowTs) / 1000);
+        
+        if (!news.isReleased) {
+            // Early Warnings Stages:
+            // 30 Menit (1800s)
+            if (diffSec <= 1800 && diffSec > 1740 && !news.notifiedStages.has('30m')) {
+                news.notifiedStages.add('30m');
+                triggerEarlyWarning(news, '30 Menit');
+            }
+            // 20 Menit (1200s)
+            else if (diffSec <= 1200 && diffSec > 1140 && !news.notifiedStages.has('20m')) {
+                news.notifiedStages.add('20m');
+                triggerEarlyWarning(news, '20 Menit');
+            }
+            // 10 Menit (600s)
+            else if (diffSec <= 600 && diffSec > 540 && !news.notifiedStages.has('10m')) {
+                news.notifiedStages.add('10m');
+                triggerEarlyWarning(news, '10 Menit');
+            }
+            // 5 Menit (300s)
+            else if (diffSec <= 300 && diffSec > 240 && !news.notifiedStages.has('5m')) {
+                news.notifiedStages.add('5m');
+                triggerEarlyWarning(news, '5 Menit (Siap-Siap!)');
+            }
+            // 15 Detik (Demo Trigger untuk pengujian instan)
+            else if (diffSec <= 15 && diffSec > 0 && !news.notifiedStages.has('15s') && news.id.includes('demo')) {
+                news.notifiedStages.add('15s');
+                triggerEarlyWarning(news, '15 Detik (Hitungan Mundur!)');
+            }
+            // T-0: RELEASE TIME!
+            else if (diffSec <= 0) {
+                triggerNewsNotification(news);
+            }
         }
     });
+}
+
+function triggerEarlyWarning(news, timeLeftStr) {
+    playLiveDetectedChime();
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast show';
+    toast.innerHTML = `
+        <div class="toast-header" style="color:var(--accent-gold);">
+            <span><i data-lucide="alert-triangle" style="width:14px;height:14px;color:var(--accent-gold);margin-right:6px;"></i>EARLY ALERT: ${news.title}</span>
+            <span class="time" style="background:rgba(245,158,11,0.2);padding:1px 6px;border-radius:4px;">T - ${timeLeftStr}</span>
+        </div>
+        <div class="toast-body">
+            <div style="font-size:0.75rem;line-height:1.4;">
+                <div>Rilis pukul <strong>${news.timeStr}</strong> &bull; Forecast: <strong>${news.forecast}</strong></div>
+                <div style="margin-top:6px;padding:6px 10px;background:rgba(245,158,11,0.1);border-radius:6px;border:1px solid rgba(245,158,11,0.3);color:#fde68a;">
+                    ⚡ <strong>Prediksi Otomatis:</strong> Siapkan posisi! Jika Data > Forecast &rarr; Gold Jatuh. Jika Data < Forecast &rarr; Gold Terbang.
+                </div>
+            </div>
+            <div class="toast-progress"><div class="toast-progress-bar" style="background:var(--accent-gold);"></div></div>
+        </div>
+    `;
+    
+    const container = document.getElementById('toastContainer');
+    if (container) {
+        container.appendChild(toast);
+        if (window.lucide) lucide.createIcons();
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 400);
+        }, 8000);
+    }
 }
 
 function triggerNewsNotification(news) {
     news.isReleased = true;
     simulateNewsResult(news);
+    playLiveDetectedChime();
 
-    // 1. Show Toast
+    // Show Release Toast
     const toast = document.createElement('div');
-    toast.className = 'toast';
+    toast.className = 'toast show';
     toast.innerHTML = `
-        <div class="toast-header">
-            <span><i data-lucide="bell" style="width:14px;height:14px;color:var(--primary);margin-right:6px;"></i>${news.title}</span>
+        <div class="toast-header" style="color:#ffffff;">
+            <span><i data-lucide="zap" style="width:14px;height:14px;color:var(--primary);margin-right:6px;"></i>DATA RILIS: ${news.title}</span>
             <span class="time">${news.timeStr}</span>
         </div>
         <div class="toast-body">
-            <div><strong>Actual:</strong> ${news.actual} | <strong>Forecast:</strong> ${news.forecast}</div>
-            <div style="margin-top: 4px; padding: 8px 10px; background: rgba(0,0,0,0.4); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
-                Impact: <span class="${news.impactClass}">XAUUSD ${news.xauImpact} ${news.icon} (${news.xauProb}%)</span>
+            <div><strong>Actual:</strong> <span style="font-size:0.9rem;font-weight:800;color:#fff;">${news.actual}</span> (Frcst: ${news.forecast})</div>
+            <div style="margin-top: 6px; padding: 8px 10px; background: rgba(0,0,0,0.5); border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="font-size:0.72rem;color:var(--text-muted);">${news.usdStatus}</div>
+                <div class="${news.impactClass}" style="font-size:0.82rem;font-weight:800;margin-top:2px;">
+                    ${news.icon} REKOMENDASI: ${news.actionGuide} (${news.xauProb}%)
+                </div>
             </div>
             <div class="toast-progress"><div class="toast-progress-bar"></div></div>
         </div>
@@ -983,32 +1080,11 @@ function triggerNewsNotification(news) {
     if (container) {
         container.appendChild(toast);
         if (window.lucide) lucide.createIcons();
-        const bar = toast.querySelector('.toast-progress-bar');
-        bar.style.transition = 'transform 10s linear';
-        
-        requestAnimationFrame(() => {
-            toast.classList.add('show');
-            requestAnimationFrame(() => {
-                bar.style.transform = 'scaleX(0)';
-            });
-        });
-        
+        renderNewsDashboard();
         setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 450);
-        }, 10000);
-    }
-    
-    // 2. Update Dashboard Item
-    const dashItem = document.getElementById(news.id);
-    if (dashItem) {
-        dashItem.classList.add('released');
-        const statusEl = document.getElementById(`status-${news.id}`);
-        statusEl.className = 'news-status status-released';
-        statusEl.innerText = 'RELEASED';
-        
-        const resultBox = document.getElementById(`result-${news.id}`);
-        resultBox.innerHTML = `<strong>Actual:</strong> ${news.actual} &rarr; <span class="${news.impactClass}">XAUUSD ${news.xauImpact} (${news.xauProb}%)</span>`;
+            setTimeout(() => toast.remove(), 400);
+        }, 12000);
     }
 }
 
