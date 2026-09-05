@@ -111,7 +111,29 @@
 
             <span class="divider"></span>
 
-            <!-- Group 5: Menu Toggle -->
+            <!-- Group 5: Language Selection (Pilihan Bahasa) -->
+            <div class="control-group lang-group">
+                <div class="select-wrapper lang-select-wrapper" title="Pilih Bahasa / Select Language" style="position:relative;">
+                    <i data-lucide="globe" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--accent-gold);pointer-events:none;z-index:2;"></i>
+                    <select id="langSelect" onchange="changeLanguage(this.value)" style="padding-left:29px;min-width:148px;font-weight:600;font-size:0.75rem;border-color:rgba(245,158,11,0.35);background:rgba(18,24,38,0.85);color:var(--text-primary);cursor:pointer;">
+                        <option value="id" selected>🇮🇩 Indonesia (ID)</option>
+                        <option value="en">🇬🇧 English (EN)</option>
+                        <option value="ja">🇯🇵 日本語 (JA)</option>
+                        <option value="zh">🇨🇳 简体中文 (ZH)</option>
+                        <option value="ar">🇸🇦 العربية (AR)</option>
+                        <option value="es">🇪🇸 Español (ES)</option>
+                        <option value="ru">🇷🇺 Русский (RU)</option>
+                        <option value="de">🇩🇪 Deutsch (DE)</option>
+                        <option value="fr">🇫🇷 Français (FR)</option>
+                        <option value="pt">🇧🇷 Português (PT)</option>
+                        <option value="ko">🇰🇷 한국어 (KO)</option>
+                    </select>
+                </div>
+            </div>
+
+            <span class="divider"></span>
+
+            <!-- Group 6: Menu Toggle -->
             <div class="control-group action-group">
                 <button id="hideMenuBtn" class="btn-secondary btn-hide-menu" onclick="toggleMenuBar()" title="Sembunyikan Menu Bar">
                     <i data-lucide="chevron-up"></i>
@@ -265,6 +287,19 @@
                 <span id="newsPanelTitleText">Market Intelligence</span>
             </div>
             <div class="news-header-actions">
+                <select id="panelLangSelect" class="panel-lang-select" onchange="changeLanguage(this.value)" title="Pilih Bahasa / Language" style="background:rgba(255,255,255,0.06);border:1px solid var(--border-color);border-radius:var(--radius-sm);color:var(--text-primary);font-size:0.72rem;padding:3px 6px;outline:none;cursor:pointer;font-weight:600;">
+                    <option value="id" selected>🇮🇩 ID</option>
+                    <option value="en">🇬🇧 EN</option>
+                    <option value="ja">🇯🇵 JA</option>
+                    <option value="zh">🇨🇳 ZH</option>
+                    <option value="ar">🇸🇦 AR</option>
+                    <option value="es">🇪🇸 ES</option>
+                    <option value="ru">🇷🇺 RU</option>
+                    <option value="de">🇩🇪 DE</option>
+                    <option value="fr">🇫🇷 FR</option>
+                    <option value="pt">🇧🇷 PT</option>
+                    <option value="ko">🇰🇷 KO</option>
+                </select>
                 <button id="miniDashboardToggleBtn" class="btn-panel-action" onclick="toggleMiniDashboard()" title="Toggle Compact / Mini Dashboard Mode">
                     <i data-lucide="minimize-2"></i>
                     <span>Mini View</span>
@@ -364,9 +399,9 @@
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                         <span style="font-size:0.78rem;display:flex;align-items:center;gap:6px;color:var(--text-primary);font-weight:600;">
                             <i data-lucide="bell-ring" style="width:14px;height:14px;color:var(--accent-gold);"></i>
-                            <span>Early Warning Alerts Timing:</span>
+                            <span id="alertTimingTitleText">Early Warning Alerts Timing:</span>
                         </span>
-                        <span style="font-size:0.68rem;color:var(--text-muted);">(Pilih interval alarm notifikasi)</span>
+                        <span id="alertTimingSubText" style="font-size:0.68rem;color:var(--text-muted);">(Pilih interval alarm notifikasi)</span>
                     </div>
                     <div class="alert-timing-options" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                         <button type="button" class="alert-toggle-btn active" id="btn_alert_30m" onclick="toggleAlertSetting('30m')">
@@ -455,6 +490,7 @@
 
     <!-- Script API wajib dipanggil di HTML -->
     <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="translations.js?v=2.6"></script>
     <script src="script.js?v=2.6"></script>
 </body>
 </html>

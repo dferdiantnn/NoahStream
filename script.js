@@ -5,6 +5,156 @@ let recentHistory = [];
 let isEcoMode = false;
 let isLowFps = false;
 
+// --- MULTI-LANGUAGE (i18n) ENGINE ---
+let currentLang = localStorage.getItem('noah_language') || 'id';
+
+function t(key, fallback = '') {
+    if (window.NOAH_TRANSLATIONS && window.NOAH_TRANSLATIONS[currentLang] && window.NOAH_TRANSLATIONS[currentLang][key]) {
+        return window.NOAH_TRANSLATIONS[currentLang][key];
+    }
+    if (window.NOAH_TRANSLATIONS && window.NOAH_TRANSLATIONS['id'] && window.NOAH_TRANSLATIONS['id'][key]) {
+        return window.NOAH_TRANSLATIONS['id'][key];
+    }
+    return fallback;
+}
+
+function applyLanguage(lang) {
+    if (!window.NOAH_TRANSLATIONS || !window.NOAH_TRANSLATIONS[lang]) lang = 'id';
+    currentLang = lang;
+    localStorage.setItem('noah_language', lang);
+
+    // Sync select dropdowns in navbar & panel
+    const mainSelect = document.getElementById('langSelect');
+    if (mainSelect) mainSelect.value = lang;
+    const panelSelect = document.getElementById('panelLangSelect');
+    if (panelSelect) panelSelect.value = lang;
+
+    // Search input placeholder
+    const videoInput = document.getElementById('videoInput');
+    if (videoInput) videoInput.placeholder = t('videoPlaceholder', 'Paste YouTube URL or Video ID...');
+
+    // Add button
+    const addBtnSpan = document.querySelector('.input-group button span');
+    if (addBtnSpan) addBtnSpan.innerText = t('btnAdd', 'Add');
+
+    // Layout options
+    const layoutSelect = document.getElementById('layoutSelect');
+    if (layoutSelect) {
+        const val = layoutSelect.value;
+        layoutSelect.innerHTML = `
+            <option value="auto">${t('layoutAuto', 'Auto Columns')}</option>
+            <option value="1">${t('layout1', '1 Column')}</option>
+            <option value="2">${t('layout2', '2 Columns')}</option>
+            <option value="3">${t('layout3', '3 Columns')}</option>
+            <option value="4">${t('layout4', '4 Columns')}</option>
+        `;
+        layoutSelect.value = val;
+    }
+
+    // Pin options
+    const pinSelect = document.getElementById('pinPositionSelect');
+    if (pinSelect) {
+        const val = pinSelect.value;
+        pinSelect.innerHTML = `
+            <option value="top">${t('pinTop', '📌 Pin: Top')}</option>
+            <option value="left">${t('pinLeft', '📌 Pin: Left (50%)')}</option>
+            <option value="right">${t('pinRight', '📌 Pin: Right (50%)')}</option>
+        `;
+        pinSelect.value = val;
+    }
+
+    // Buttons in tools-group
+    const btnSync = document.querySelector('.btn-success span');
+    if (btnSync) btnSync.innerHTML = `${t('btnSyncLive', 'Sync Live')} <kbd class="shortcut-kbd">➡</kbd>`;
+    
+    const btnWaiting = document.querySelector('.btn-waiting-list span');
+    if (btnWaiting) {
+        const count = typeof waitingList !== 'undefined' ? waitingList.length : 0;
+        btnWaiting.innerHTML = `${t('btnWaitingList', 'Waiting List')} <strong id="waitingListBadge" class="waiting-count-badge">${count}</strong>`;
+    }
+
+    const btnDiscovery = document.querySelector('.btn-discovery span');
+    if (btnDiscovery) btnDiscovery.innerText = t('btnLiveFinder', 'Live Finder');
+
+    const btnNews = document.querySelector('.btn-news span');
+    if (btnNews) btnNews.innerText = t('btnNews', 'News XAUUSD');
+
+    // FPS & Eco Buttons
+    const fpsBtnSpan = document.querySelector('#fpsBtn span');
+    if (fpsBtnSpan) fpsBtnSpan.innerText = isLowFps ? t('lowFpsOn', 'Low FPS: ON') : t('lowFpsOff', 'Low FPS: OFF');
+
+    const ecoBtnSpan = document.querySelector('#ecoBtn span');
+    if (ecoBtnSpan) ecoBtnSpan.innerText = isEcoMode ? t('ecoOn', 'Eco: ON') : t('ecoOff', 'Eco: OFF');
+
+    // Hide Menu button
+    const hideBtnSpan = document.querySelector('#hideMenuBtn span');
+    if (hideBtnSpan) hideBtnSpan.innerText = t('hideMenu', 'Hide');
+
+    // Recent label
+    const recentLabel = document.querySelector('.recent-label span');
+    if (recentLabel) recentLabel.innerText = t('recentTitle', 'Recent:');
+
+    // Market Intelligence panel header
+    const titleElem = document.getElementById('newsPanelTitleText');
+    if (titleElem) titleElem.innerText = t('marketIntelTitle', 'Market Intelligence');
+
+    // Mini view button text
+    const miniBtn = document.querySelector('#miniDashboardToggleBtn span');
+    if (miniBtn) {
+        const panel = document.getElementById('newsPanel');
+        const isMini = panel && panel.classList.contains('mini-dashboard');
+        miniBtn.innerText = isMini ? t('normalView', 'Tampilan Penuh') : t('miniView', 'Tampilan Mini');
+    }
+
+    // Tab buttons
+    const tabBtns = document.querySelectorAll('.tab-buttons .tab-btn');
+    if (tabBtns && tabBtns.length >= 5) {
+        tabBtns[0].innerHTML = `<i data-lucide="newspaper" style="width:13px;height:13px;margin-right:4px;"></i>${t('tabNews', 'News')}`;
+        tabBtns[1].innerHTML = `<i data-lucide="line-chart" style="width:13px;height:13px;margin-right:4px;"></i>${t('tabLiveChart', 'Live Chart')}`;
+        tabBtns[2].innerHTML = `<i data-lucide="zap" style="width:13px;height:13px;margin-right:4px;"></i>${t('tabEaSignals', 'EA Signals')}`;
+        tabBtns[3].innerHTML = `<i data-lucide="gauge" style="width:13px;height:13px;margin-right:4px;"></i>${t('tabTechnical', 'Technical')}`;
+        tabBtns[4].innerHTML = `<i data-lucide="calendar" style="width:13px;height:13px;margin-right:4px;"></i>${t('tabCalendar', 'Calendar')}`;
+    }
+
+    // Subtitle & Header in tabNews
+    const newsHeaderH3 = document.querySelector('#tabNews h3');
+    if (newsHeaderH3) newsHeaderH3.innerText = t('newsHeading', 'High-Impact News & Predictive Analytics');
+    const newsHeaderP = document.querySelector('#tabNews p');
+    if (newsHeaderP) newsHeaderP.innerText = t('newsSubheading', 'Automated Gold (XAUUSD) Impact Forecaster & Multi-Stage Alert');
+
+    // Alert Timing Header
+    const alertTimingTitle = document.getElementById('alertTimingTitleText');
+    if (alertTimingTitle) alertTimingTitle.innerText = t('alertsTimingTitle', 'Early Warning Alerts Timing:');
+    const alertTimingSub = document.getElementById('alertTimingSubText');
+    if (alertTimingSub) alertTimingSub.innerText = t('alertsTimingSub', '(Pilih interval alarm notifikasi)');
+
+    // Alert Timing Buttons
+    const btn30 = document.querySelector('#btn_alert_30m .toggle-label');
+    if (btn30) btn30.innerText = t('alert30m', '30 Menit');
+    const btn20 = document.querySelector('#btn_alert_20m .toggle-label');
+    if (btn20) btn20.innerText = t('alert20m', '20 Menit');
+    const btn10 = document.querySelector('#btn_alert_10m .toggle-label');
+    if (btn10) btn10.innerText = t('alert10m', '10 Menit');
+    const btn5 = document.querySelector('#btn_alert_5m .toggle-label');
+    if (btn5) btn5.innerText = t('alert5m', '5 Menit');
+    const releaseTag = document.querySelector('.alert-timing-options .stage-tag');
+    if (releaseTag) releaseTag.innerText = t('alertAtRelease', '⚡ Saat Data Rilis (T-0)');
+
+    // Re-render news dashboard in selected language
+    if (typeof renderNewsDashboard === 'function') {
+        renderNewsDashboard();
+    }
+
+    if (window.lucide) lucide.createIcons();
+}
+
+function changeLanguage(lang) {
+    applyLanguage(lang);
+    if (typeof showToastNotification === 'function') {
+        showToastNotification(t('langToast', 'Bahasa diubah'), 'Language');
+    }
+}
+
 function onYouTubeIframeAPIReady() {
     loadSession();
 }
@@ -1064,22 +1214,44 @@ function formatIndonesianDateTime(dateStr, timeStr, timestamp) {
         }
     }
 
-    if (dt && !isNaN(dt.getTime())) {
-        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-        const dayName = days[dt.getDay()];
-        const dayNum = dt.getDate();
-        const monthName = months[dt.getMonth()];
-        const year = dt.getFullYear();
-
-        let cleanTime = timeStr || '';
-        if (cleanTime.split(':').length === 3) {
-            cleanTime = cleanTime.substring(0, 5);
-        }
-        return `${dayName}, ${dayNum} ${monthName} ${year} • ${cleanTime} WIB`;
+    let cleanTime = timeStr || '';
+    if (cleanTime.split(':').length === 3) {
+        cleanTime = cleanTime.substring(0, 5);
     }
 
-    return dateStr ? `${dateStr} • ${timeStr} WIB` : `${timeStr} WIB`;
+    if (dt && !isNaN(dt.getTime())) {
+        const localeMap = {
+            id: 'id-ID',
+            en: 'en-US',
+            ja: 'ja-JP',
+            zh: 'zh-CN',
+            ar: 'ar-SA',
+            es: 'es-ES',
+            ru: 'ru-RU',
+            de: 'de-DE',
+            fr: 'fr-FR',
+            pt: 'pt-BR',
+            ko: 'ko-KR'
+        };
+        const activeLocale = localeMap[currentLang] || 'id-ID';
+
+        try {
+            const formatter = new Intl.DateTimeFormat(activeLocale, {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+            const formattedDate = formatter.format(dt);
+            return `${formattedDate} • ${cleanTime} WIB`;
+        } catch (e) {
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            return `${days[dt.getDay()]}, ${dt.getDate()} ${months[dt.getMonth()]} ${dt.getFullYear()} • ${cleanTime} WIB`;
+        }
+    }
+
+    return dateStr ? `${dateStr} • ${cleanTime} WIB` : `${cleanTime} WIB`;
 }
 
 async function generateTodaySchedule() {
@@ -1290,8 +1462,8 @@ function toggleNewsDetail(newsId) {
 
     if (btn) {
         btn.innerHTML = isHidden 
-            ? `<i data-lucide="chevron-down" style="width:13px;height:13px;"></i><span>Detail & Analisa</span>`
-: `<i data-lucide="chevron-up" style="width:13px;height:13px;"></i><span>Tutup Detail</span>`;
+            ? `<i data-lucide="chevron-down" style="width:13px;height:13px;"></i><span>${t('detailBtnOpen', 'Detail & Analisa')}</span>`
+            : `<i data-lucide="chevron-up" style="width:13px;height:13px;"></i><span>${t('detailBtnClose', 'Tutup Detail')}</span>`;
         if (window.lucide) lucide.createIcons();
     }
 }
@@ -1335,40 +1507,39 @@ function generateFundamentalAnalysisCard(news) {
                 <div class="calc-box-header">
                     <span class="calc-box-title">
                         <i data-lucide="calculator" style="width:14px;height:14px;"></i>
-                        <span>Kalkulasi Fundamental & Sinyal Riil</span>
+                        <span>${t('calcTitleReleased', 'Kalkulasi Fundamental & Sinyal Riil')}</span>
                     </span>
                     <span class="calc-signal-badge ${signalType}">${signalText}</span>
                 </div>
                 <div class="calc-grid">
                     <div class="calc-stat-item">
-                        <span class="calc-stat-label">Deviasi Riil (Actual - Forecast)</span>
+                        <span class="calc-stat-label">${t('realDeviation', 'Deviasi Riil (Actual - Forecast)')}</span>
                         <span class="calc-stat-val" style="color:${diff >= 0 ? '#4ade80' : '#f87171'};">${diffFormatted} (${news.actual} vs ${news.forecast || news.prev})</span>
                     </div>
                     <div class="calc-stat-item">
-                        <span class="calc-stat-label">Transmisi Makro & Dolar AS</span>
+                        <span class="calc-stat-label">${t('macroTransmission', 'Transmisi Makro & Dolar AS')}</span>
                         <span class="calc-stat-val" style="color:var(--accent-gold);">${usdEffect}</span>
                     </div>
                 </div>
                 <div class="calc-trigger-container">
                     <div class="calc-trigger-row">
-                        <span style="color:var(--text-secondary);">Reaksi Volatilitas Rata-Rata:</span>
+                        <span style="color:var(--text-secondary);">${t('historicalVol', 'Reaksi Volatilitas Rata-Rata:')}</span>
                         <strong style="color:#ffffff;">${pipsRange}</strong>
                     </div>
                     <div class="calc-trigger-row">
-                        <span style="color:var(--text-secondary);">Status Data:</span>
-                        <span style="color:var(--success);font-weight:700;">Data Resmi Terkonfirmasi Rilis</span>
+                        <span style="color:var(--text-secondary);">Status:</span>
+                        <span style="color:var(--success);font-weight:700;">${t('dataConfirmed', 'Data Resmi Terkonfirmasi Rilis')}</span>
                     </div>
                 </div>
                 <div class="calc-source-note">
                     <i data-lucide="info" style="width:12px;height:12px;flex-shrink:0;margin-top:2px;color:var(--accent-cyan);"></i>
-                    <span><strong>Sumber & Rumus Perhitungan:</strong> Model Deviasi Kejutan Makro (Surprise Score = Actual &minus; Forecast). Deviasi ${diff >= 0 ? 'di atas' : 'di bawah'} konsensus langsung mengubah probabilitas suku bunga The Fed pada FedWatch CME.</span>
+                    <span>${t('calcSourceReleased', 'Sumber & Rumus Perhitungan: Model Deviasi Kejutan Makro (Surprise Score = Actual − Forecast). Deviasi terhadap konsensus langsung mengubah probabilitas suku bunga The Fed pada FedWatch CME.')}</span>
                 </div>
             </div>
         `;
     }
 
     // 2. DATA YANG BELUM RILIS (UPCOMING / PRA-RILIS)
-    // Hitung pergeseran konsensus analis: Delta = Forecast - Previous
     let delta = 0;
     let deltaStr = '0.00';
     if (fcNum !== null && prevNum !== null) {
@@ -1391,9 +1562,9 @@ function generateFundamentalAnalysisCard(news) {
     let sellTrigger = '';
     let pipsEst = '±80 - 150 Pips';
 
-    const t = (news.title || '').toLowerCase();
+    const titleLower = (news.title || '').toLowerCase();
 
-    if (t.includes('cpi')) {
+    if (titleLower.includes('cpi')) {
         pipsEst = '±150 - 300 Pips';
         if (delta > 0) {
             biasClass = 'signal-sell';
@@ -1406,7 +1577,7 @@ function generateFundamentalAnalysisCard(news) {
         }
         buyTrigger = `Actual &le; 0.2% (Inflasi Melandai &rarr; Peluang Cut Rate 50 bps Naik &rarr; Target +180 s/d +300 pips)`;
         sellTrigger = `Actual &ge; 0.4% (Inflasi Panas &rarr; The Fed Tahan Bunga &rarr; Dolar Perkasa &rarr; Target -150 s/d -250 pips)`;
-    } else if (t.includes('ppi')) {
+    } else if (titleLower.includes('ppi')) {
         pipsEst = '±70 - 130 Pips';
         if (delta >= 0) {
             biasClass = 'signal-sell';
@@ -1419,7 +1590,7 @@ function generateFundamentalAnalysisCard(news) {
         }
         buyTrigger = `Actual &lt; 0.2% (Biaya grosir turun &rarr; Leading Indicator Disinflasi &rarr; Target +80-120 pips)`;
         sellTrigger = `Actual &ge; 0.3% (Biaya grosir melonjak &rarr; Tekanan Inflasi Naik &rarr; Target -70-110 pips)`;
-    } else if (t.includes('unemployment claims') || t.includes('jobless claims')) {
+    } else if (titleLower.includes('unemployment claims') || titleLower.includes('jobless claims')) {
         pipsEst = '±40 - 80 Pips';
         if (delta <= 0) {
             biasClass = 'signal-sell';
@@ -1432,7 +1603,7 @@ function generateFundamentalAnalysisCard(news) {
         }
         buyTrigger = `Actual &gt; 215K (PHK melonjak &rarr; Tanda Resesi &rarr; The Fed Terpaksa Dovish &rarr; Target +60-90 pips)`;
         sellTrigger = `Actual &le; 205K (Tenaga kerja AS sangat solid &rarr; Hawkish Fed &rarr; Target -50-80 pips)`;
-    } else if (t.includes('sentiment') || t.includes('confidence')) {
+    } else if (titleLower.includes('sentiment') || titleLower.includes('confidence')) {
         pipsEst = '±40 - 75 Pips';
         if (delta < 0) {
             biasClass = 'signal-buy';
@@ -1457,37 +1628,37 @@ function generateFundamentalAnalysisCard(news) {
             <div class="calc-box-header">
                 <span class="calc-box-title">
                     <i data-lucide="bar-chart-2" style="width:14px;height:14px;"></i>
-                    <span>Kalkulasi Fundamental & Proyeksi Sinyal</span>
+                    <span>${t('calcTitleUpcoming', 'Kalkulasi Fundamental & Proyeksi Sinyal')}</span>
                 </span>
                 <span class="calc-signal-badge ${biasClass}">${biasText} (${prob} Conf.)</span>
             </div>
             
             <div class="calc-grid">
                 <div class="calc-stat-item">
-                    <span class="calc-stat-label">Pergeseran Konsensus (&Delta; Forecast vs Prev)</span>
+                    <span class="calc-stat-label">${t('consensusShift', 'Pergeseran Konsensus (Δ Forecast vs Prev)')}</span>
                     <span class="calc-stat-val" style="color:var(--accent-gold);">${deltaStr} (${news.prev} &rarr; ${news.forecast})</span>
                 </div>
                 <div class="calc-stat-item">
-                    <span class="calc-stat-label">Estimasi Volatilitas XAUUSD</span>
+                    <span class="calc-stat-label">${t('volatilityEst', 'Estimasi Volatilitas XAUUSD')}</span>
                     <span class="calc-stat-val" style="color:var(--accent-cyan);">${pipsEst}</span>
                 </div>
             </div>
 
             <div class="calc-trigger-container">
-                <div style="font-weight:700;color:#ffffff;margin-bottom:3px;font-size:0.71rem;">🎯 Formula Eksekusi Saat Data Rilis (Trigger Levels):</div>
+                <div style="font-weight:700;color:#ffffff;margin-bottom:3px;font-size:0.71rem;">${t('executionFormula', '🎯 Formula Eksekusi Saat Data Rilis (Trigger Levels):')}</div>
                 <div class="calc-trigger-row" style="margin-bottom:2px;">
-                    <span style="color:#4ade80;font-weight:700;flex-shrink:0;">🟢 TRIGGER BUY:</span>
+                    <span style="color:#4ade80;font-weight:700;flex-shrink:0;">${t('triggerBuy', '🟢 TRIGGER BUY:')}</span>
                     <span style="color:var(--text-primary);text-align:right;flex:1;margin-left:8px;font-size:0.71rem;">${buyTrigger}</span>
                 </div>
                 <div class="calc-trigger-row">
-                    <span style="color:#f87171;font-weight:700;flex-shrink:0;">🔴 TRIGGER SELL:</span>
+                    <span style="color:#f87171;font-weight:700;flex-shrink:0;">${t('triggerSell', '🔴 TRIGGER SELL:')}</span>
                     <span style="color:var(--text-primary);text-align:right;flex:1;margin-left:8px;font-size:0.71rem;">${sellTrigger}</span>
                 </div>
             </div>
 
             <div class="calc-source-note">
                 <i data-lucide="help-circle" style="width:12px;height:12px;flex-shrink:0;margin-top:2px;color:var(--accent-gold);"></i>
-                <span><strong>Dasar & Sumber Perhitungan:</strong> Dihitung dari <em>Consensus Shift Vector</em> (&Delta; = Forecast &minus; Previous) yang mencerminkan ekspektasi yang sudah di-<em>priced-in</em> oleh institusi perbankan global (Wall Street Consensus), dikorelasikan dengan respon imbal hasil obligasi US 10Y Treasury terhadap harga emas (XAUUSD).</span>
+                <span>${t('calcSourceUpcoming', 'Dasar & Sumber Perhitungan: Dihitung dari Consensus Shift Vector (Δ = Forecast − Previous) yang mencerminkan ekspektasi perbankan global (Wall Street Consensus), dikorelasikan dengan respon imbal hasil obligasi US 10Y Treasury terhadap harga emas (XAUUSD).')}</span>
             </div>
         </div>
     `;
@@ -1538,8 +1709,8 @@ function renderNewsDashboard() {
             `
             : `
                 <div style="font-size:0.72rem;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center;">
-                    <span>Menunggu rilis data resmi...</span>
-                    <span style="color:var(--accent-gold);font-weight:600;"><i data-lucide="bell" style="width:11px;height:11px;"></i> Alert 30m, 20m, 10m, 5m aktif</span>
+                    <span>${t('waitingData', 'Menunggu rilis data resmi...')}</span>
+                    <span style="color:var(--accent-gold);font-weight:600;"><i data-lucide="bell" style="width:11px;height:11px;"></i> ${t('alertActiveText', 'Alert 30m, 20m, 10m, 5m aktif')}</span>
                 </div>
             `;
         
@@ -1570,21 +1741,21 @@ function renderNewsDashboard() {
             <!-- Detail Accordion Toggle Button -->
             <button type="button" class="news-detail-btn" id="btn-detail-${news.id}" onclick="toggleNewsDetail('${news.id}')">
                 <i data-lucide="chevron-down" style="width:13px;height:13px;"></i>
-                <span>Detail & Analisa</span>
+                <span>${t('detailBtnOpen', 'Detail & Analisa')}</span>
             </button>
 
             <!-- Expandable Details Content Box -->
             <div class="news-detail-content hidden" id="detail-${news.id}">
                 <div class="detail-row">
-                    <div class="detail-section-title"><i data-lucide="info" style="width:13px;height:13px;"></i> Apa itu Berita Ini?</div>
+                    <div class="detail-section-title"><i data-lucide="info" style="width:13px;height:13px;"></i> ${t('whatIsThis', 'Apa itu Berita Ini?')}</div>
                     <p>${summaryText}</p>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-section-title"><i data-lucide="crosshair" style="width:13px;height:13px;"></i> Kenapa Trader Emas Wajib Tahu?</div>
+                    <div class="detail-section-title"><i data-lucide="crosshair" style="width:13px;height:13px;"></i> ${t('whyGoldTraders', 'Kenapa Trader Emas Wajib Tahu?')}</div>
                     <p>${whyImportantText}</p>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-section-title"><i data-lucide="zap" style="width:13px;height:13px;"></i> Aturan Dampak ke XAUUSD:</div>
+                    <div class="detail-section-title"><i data-lucide="zap" style="width:13px;height:13px;"></i> ${t('impactRule', 'Aturan Dampak ke XAUUSD:')}</div>
                     <p style="color:var(--text-primary);font-weight:500;">${impactRuleText}</p>
                 </div>
 
