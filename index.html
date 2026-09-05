@@ -35,60 +35,85 @@
             <div id="realtimeClock" class="clock">Loading Time...</div>
         </div>
         <div class="controls">
-            <div class="input-wrapper">
-                <i data-lucide="search" class="input-icon"></i>
-                <input type="text" id="videoInput" placeholder="Paste YouTube URL or Video ID..." onkeypress="handleEnterKey(event)" />
+            <!-- Group 1: Stream Input -->
+            <div class="control-group input-group">
+                <div class="input-wrapper">
+                    <i data-lucide="search" class="input-icon"></i>
+                    <input type="text" id="videoInput" placeholder="Paste YouTube URL or Video ID..." onkeypress="handleEnterKey(event)" />
+                </div>
+                <button class="btn-primary" onclick="handleAddStreamInput()" title="Add Stream">
+                    <i data-lucide="plus"></i>
+                    <span>Add</span>
+                </button>
             </div>
-            <button class="btn-primary" onclick="handleAddStreamInput()">
-                <i data-lucide="plus"></i>
-                <span>Add Stream</span>
-            </button>
+
             <span class="divider"></span>
-            <div class="select-wrapper">
-                <select id="layoutSelect" onchange="changeLayout()">
-                    <option value="auto">Auto Columns</option>
-                    <option value="1">1 Column</option>
-                    <option value="2">2 Columns</option>
-                    <option value="3">3 Columns</option>
-                    <option value="4">4 Columns</option>
-                </select>
+
+            <!-- Group 2: Layout & Pinning -->
+            <div class="control-group layout-group">
+                <div class="select-wrapper">
+                    <select id="layoutSelect" onchange="changeLayout()" title="Grid Columns">
+                        <option value="auto">Auto Columns</option>
+                        <option value="1">1 Column</option>
+                        <option value="2">2 Columns</option>
+                        <option value="3">3 Columns</option>
+                        <option value="4">4 Columns</option>
+                    </select>
+                </div>
+                <div class="select-wrapper" id="pinPositionWrapper" title="Posisi video yang di-pin">
+                    <select id="pinPositionSelect" onchange="changePinPosition()">
+                        <option value="top">📌 Pin: Top</option>
+                        <option value="left" selected>📌 Pin: Left (50%)</option>
+                        <option value="right">📌 Pin: Right (50%)</option>
+                    </select>
+                </div>
             </div>
-            <div class="select-wrapper" id="pinPositionWrapper" title="Posisi video yang di-pin di layar lebar (Landscape)">
-                <select id="pinPositionSelect" onchange="changePinPosition()">
-                    <option value="top">📌 Pin: Top (Full)</option>
-                    <option value="left" selected>📌 Pin: Left Side (50%)</option>
-                    <option value="right">📌 Pin: Right Side (50%)</option>
-                </select>
+
+            <span class="divider"></span>
+
+            <!-- Group 3: Core Stream Tools -->
+            <div class="control-group tools-group">
+                <button onclick="syncAllStreams()" class="btn-success" title="Resynchronize all streams (Shortcut: ➡)">
+                    <i data-lucide="refresh-cw"></i>
+                    <span>Sync Live <kbd class="shortcut-kbd">➡</kbd></span>
+                </button>
+                <button class="btn-waiting-list" onclick="openWaitingListModal()" title="Auto-watch streams when they start live">
+                    <i data-lucide="clock"></i>
+                    <span>Waiting List <strong id="waitingListBadge" class="waiting-count-badge">0</strong></span>
+                </button>
+                <button class="btn-discovery" onclick="openLiveDiscoveryModal()" title="Auto-find and load top live streams">
+                    <i data-lucide="radio"></i>
+                    <span>Live Finder</span>
+                </button>
+                <button class="btn-news" onclick="toggleNewsPanel()" title="TradingView Market & Economic News">
+                    <i data-lucide="trending-up"></i>
+                    <span>News XAUUSD</span>
+                </button>
             </div>
-            <button onclick="syncAllStreams()" class="btn-success" title="Resynchronize all streams to live position (Shortcut: ➡ / Arrow Right)">
-                <i data-lucide="refresh-cw"></i>
-                <span>Sync Live <kbd style="font-size:0.65rem;padding:1px 4px;background:rgba(0,0,0,0.3);border-radius:3px;margin-left:4px;">➡</kbd></span>
-            </button>
-            <button class="btn-waiting-list" onclick="openWaitingListModal()" title="Auto-watch streams when they start live">
-                <i data-lucide="clock"></i>
-                <span>Waiting List <strong id="waitingListBadge" class="waiting-count-badge">0</strong></span>
-            </button>
+
             <span class="divider"></span>
-            <button id="fpsBtn" class="btn-warning" onclick="toggleLowFPS()">
-                <i data-lucide="gauge"></i>
-                <span>Low FPS: OFF</span>
-            </button>
-            <button id="ecoBtn" class="btn-eco" onclick="toggleEcoMode()">
-                <i data-lucide="leaf"></i>
-                <span>Eco: OFF</span>
-            </button>
-            <button class="btn-discovery" onclick="openLiveDiscoveryModal()" title="Auto-find and load top live streams">
-                <i data-lucide="radio"></i>
-                <span>Live Finder</span>
-            </button>
-            <button class="btn-news" onclick="toggleNewsPanel()">
-                <i data-lucide="trending-up"></i>
-                <span>News XAUUSD</span>
-            </button>
+
+            <!-- Group 4: Performance & Display -->
+            <div class="control-group perf-group">
+                <button id="fpsBtn" class="btn-warning" onclick="toggleLowFPS()" title="Toggle Low FPS Mode">
+                    <i data-lucide="gauge"></i>
+                    <span>Low FPS: OFF</span>
+                </button>
+                <button id="ecoBtn" class="btn-eco" onclick="toggleEcoMode()" title="Toggle Eco Mode">
+                    <i data-lucide="leaf"></i>
+                    <span>Eco: OFF</span>
+                </button>
+            </div>
+
             <span class="divider"></span>
-            <button class="btn-secondary btn-icon-only" onclick="toggleMenuBar()" title="Hide Menu">
-                <i data-lucide="chevron-up"></i>
-            </button>
+
+            <!-- Group 5: Menu Toggle -->
+            <div class="control-group action-group">
+                <button id="hideMenuBtn" class="btn-secondary btn-hide-menu" onclick="toggleMenuBar()" title="Sembunyikan Menu Bar">
+                    <i data-lucide="chevron-up"></i>
+                    <span>Hide</span>
+                </button>
+            </div>
         </div>
     </header>
 

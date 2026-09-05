@@ -197,9 +197,15 @@ header {
 
 .controls {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
     flex-wrap: wrap;
+}
+
+.control-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .divider {
@@ -207,6 +213,32 @@ header {
     height: 22px;
     background: var(--border-subtle);
     margin: 0 4px;
+}
+
+.shortcut-kbd {
+    font-size: 0.65rem;
+    padding: 1px 5px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 4px;
+    margin-left: 4px;
+    font-family: inherit;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.btn-hide-menu {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    padding: 8px 12px;
+    gap: 6px;
+    transition: all var(--transition-fast);
+}
+
+.btn-hide-menu:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+    transform: translateY(-1px);
 }
 
 /* ==========================================================================
