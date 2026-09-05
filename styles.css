@@ -1276,6 +1276,7 @@ main {
 .discovery-modal.hidden {
     opacity: 0;
     pointer-events: none;
+    display: none !important;
 }
 
 .discovery-modal-backdrop {
