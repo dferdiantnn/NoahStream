@@ -359,50 +359,37 @@
                     <div id="dashboardClock" class="dashboard-clock"></div>
                 </div>
 
-                <!-- Automated Predictive Analysis Matrix Card (MRKT AI Logic) -->
-                <div class="nfp-playbook-card">
-                    <div class="nfp-header">
-                        <div class="nfp-badge"><i data-lucide="brain-circuit"></i> AUTO-PREDICTION ENGINE</div>
-                        <span class="nfp-sub">MRKT Analysis Matrix</span>
+                <!-- Early Warning Alert Controls -->
+                <div class="alert-settings-card" style="background:var(--card-bg);border:1px solid var(--border-color);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="font-size:0.78rem;display:flex;align-items:center;gap:6px;color:var(--text-primary);font-weight:600;">
+                            <i data-lucide="bell-ring" style="width:14px;height:14px;color:var(--accent-gold);"></i>
+                            <span>Early Warning Alerts Timing:</span>
+                        </span>
+                        <span style="font-size:0.68rem;color:var(--text-muted);">(Pilih interval alarm notifikasi)</span>
                     </div>
-                    <div class="nfp-rule-grid">
-                        <div class="nfp-rule-box bullish-usd">
-                            <strong>🟢 Actual > Forecast (Data Kuat)</strong>
-                            <p>Ekonomi AS Solid &rarr; The Fed Tahan/Hawkish &rarr; <span class="text-bullish">USD NAIK 📈</span> | <span class="text-bearish">GOLD TURUN 📉 (SELL XAU)</span></p>
-                        </div>
-                        <div class="nfp-rule-box bearish-usd">
-                            <strong>🔴 Actual < Forecast (Data Lemah)</strong>
-                            <p>Ekonomi Melambat &rarr; The Fed Pangkas Bunga &rarr; <span class="text-bearish">USD TURUN 📉</span> | <span class="text-bullish">GOLD TERBANG 🚀 (BUY XAU)</span></p>
-                        </div>
-                    </div>
-                    <div class="alert-stages-indicator" style="flex-direction:column;align-items:flex-start;gap:8px;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
-                            <span><i data-lucide="bell-ring" style="width:12px;height:12px;color:var(--accent-gold);"></i> <strong>Early Warning Alerts Timing:</strong></span>
-                            <span style="font-size:0.65rem;color:var(--text-muted);">(Pilih interval bunyi notifikasi)</span>
-                        </div>
-                        <div class="alert-timing-options" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                            <button type="button" class="alert-toggle-btn active" id="btn_alert_30m" onclick="toggleAlertSetting('30m')">
-                                <span class="toggle-icon">🔔</span>
-                                <span class="toggle-label">30 Menit</span>
-                                <span class="toggle-status-badge">ON</span>
-                            </button>
-                            <button type="button" class="alert-toggle-btn active" id="btn_alert_20m" onclick="toggleAlertSetting('20m')">
-                                <span class="toggle-icon">🔔</span>
-                                <span class="toggle-label">20 Menit</span>
-                                <span class="toggle-status-badge">ON</span>
-                            </button>
-                            <button type="button" class="alert-toggle-btn active" id="btn_alert_10m" onclick="toggleAlertSetting('10m')">
-                                <span class="toggle-icon">🔔</span>
-                                <span class="toggle-label">10 Menit</span>
-                                <span class="toggle-status-badge">ON</span>
-                            </button>
-                            <button type="button" class="alert-toggle-btn active" id="btn_alert_5m" onclick="toggleAlertSetting('5m')">
-                                <span class="toggle-icon">🔔</span>
-                                <span class="toggle-label">5 Menit</span>
-                                <span class="toggle-status-badge">ON</span>
-                            </button>
-                            <span class="stage-tag pulse" style="margin-left:auto;">⚡ Saat Data Rilis (T-0)</span>
-                        </div>
+                    <div class="alert-timing-options" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                        <button type="button" class="alert-toggle-btn active" id="btn_alert_30m" onclick="toggleAlertSetting('30m')">
+                            <span class="toggle-icon">🔔</span>
+                            <span class="toggle-label">30 Menit</span>
+                            <span class="toggle-status-badge">ON</span>
+                        </button>
+                        <button type="button" class="alert-toggle-btn active" id="btn_alert_20m" onclick="toggleAlertSetting('20m')">
+                            <span class="toggle-icon">🔔</span>
+                            <span class="toggle-label">20 Menit</span>
+                            <span class="toggle-status-badge">ON</span>
+                        </button>
+                        <button type="button" class="alert-toggle-btn active" id="btn_alert_10m" onclick="toggleAlertSetting('10m')">
+                            <span class="toggle-icon">🔔</span>
+                            <span class="toggle-label">10 Menit</span>
+                            <span class="toggle-status-badge">ON</span>
+                        </button>
+                        <button type="button" class="alert-toggle-btn active" id="btn_alert_5m" onclick="toggleAlertSetting('5m')">
+                            <span class="toggle-icon">🔔</span>
+                            <span class="toggle-label">5 Menit</span>
+                            <span class="toggle-status-badge">ON</span>
+                        </button>
+                        <span class="stage-tag pulse" style="margin-left:auto;">⚡ Saat Data Rilis (T-0)</span>
                     </div>
                 </div>
 
