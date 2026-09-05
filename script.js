@@ -41,7 +41,11 @@ window.addEventListener('keydown', (e) => {
 function toggleNewsPanel() {
     const panel = document.getElementById('newsPanel');
     if (panel) {
+        const isOpening = panel.classList.contains('hidden');
         panel.classList.toggle('hidden');
+        if (isOpening) {
+            openNewsTab('tabNews');
+        }
         if (window.lucide) lucide.createIcons();
     }
 }
@@ -70,6 +74,7 @@ function openNewsTab(tabId = 'tabNews', isMini = false) {
     const targetBtn = Array.from(btns).find(b => b.getAttribute('onclick')?.includes(tabId));
     if (targetBtn) targetBtn.classList.add('active');
     
+    syncAlertButtonsUI();
     if (window.lucide) lucide.createIcons();
 }
 
@@ -868,8 +873,16 @@ function switchTab(tabId, btnElement) {
     const btns = document.querySelectorAll('.tab-btn');
     btns.forEach(btn => btn.classList.remove('active'));
     
-    document.getElementById(tabId).classList.add('active');
-    if (btnElement) btnElement.classList.add('active');
+    const targetTab = document.getElementById(tabId);
+    if (targetTab) targetTab.classList.add('active');
+    
+    if (btnElement) {
+        btnElement.classList.add('active');
+    } else {
+        const matchingBtn = Array.from(btns).find(b => b.getAttribute('onclick')?.includes(tabId));
+        if (matchingBtn) matchingBtn.classList.add('active');
+    }
+    if (window.lucide) lucide.createIcons();
 }
 
 // --- REAL-TIME CLOCK ---
@@ -960,6 +973,82 @@ function processNewsPrediction(news) {
     news.actionGuide = isUsdStrong ? "SELL GOLD (XAUUSD)" : "BUY GOLD (XAUUSD)";
 }
 
+function getNewsInsights(title) {
+    const t = (title || '').toLowerCase();
+    if (t.includes('non-farm') || t.includes('nfp')) {
+        return {
+            summary: 'Non-Farm Payrolls (NFP) mengukur perubahan jumlah tenaga kerja AS di luar sektor pertanian & pemerintahan selama bulan sebelumnya.',
+            whyImportant: 'Indikator nomor 1 paling volatil di pasar global. Menjadi acuan mutlak The Fed dalam menentukan kebijakan suku bunga acuan.',
+            impactRule: 'Actual > Forecast = Ekonomi kuat, USD Bullish -> SELL GOLD (XAUUSD Turun). Actual < Forecast = USD Melemah -> BUY GOLD (XAUUSD Terbang).'
+        };
+    } else if (t.includes('unemployment rate')) {
+        return {
+            summary: 'Persentase dari total angkatan kerja AS yang saat ini menganggur namun aktif mencari pekerjaan.',
+            whyImportant: 'Mandat ganda Federal Reserve adalah stabilitas harga (inflasi) dan penyerapan tenaga kerja maksimal.',
+            impactRule: 'Actual < Forecast = Pengangguran turun, pasar tenaga kerja ketat, USD Naik -> SELL GOLD. Actual > Forecast = Pengangguran naik, USD Turun -> BUY GOLD.'
+        };
+    } else if (t.includes('cpi')) {
+        return {
+            summary: 'Consumer Price Index (CPI) mengukur rata-rata perubahan harga sekeranjang barang dan jasa konsumen dari waktu ke waktu.',
+            whyImportant: 'Tolok ukur inflasi utama. Jika inflasi tetap tinggi (panas), The Fed akan menunda atau mengurangi pemotongan suku bunga.',
+            impactRule: 'Actual > Forecast = Inflasi panas, Fed Hawkish, USD Meroket -> SELL GOLD. Actual < Forecast = Inflasi dingin, Fed Dovish -> BUY GOLD.'
+        };
+    } else if (t.includes('ppi')) {
+        return {
+            summary: 'Producer Price Index (PPI) mengukur perubahan rata-rata harga jual yang diterima produsen domestik untuk output mereka.',
+            whyImportant: 'Leading indicator (sinyal awal) untuk CPI. Kenaikan biaya produksi produsen biasanya akan diteruskan kepada konsumen.',
+            impactRule: 'Actual > Forecast = Biaya produsen naik, potensi inflasi naik, USD Menguat -> SELL GOLD. Actual < Forecast = USD Lemah -> BUY GOLD.'
+        };
+    } else if (t.includes('jobless claims') || t.includes('unemployment claims')) {
+        return {
+            summary: 'Jumlah individu warga AS yang pertama kali mengajukan klaim asuransi pengangguran selama pekan lalu.',
+            whyImportant: 'Data frekuensi mingguan tercepat untuk memantau kesehatan sektor ketenagakerjaan AS.',
+            impactRule: 'Actual > Forecast = Lebih banyak PHK / pelemahan tenaga kerja, USD Turun -> BUY GOLD. Actual < Forecast = Tenaga kerja solid -> SELL GOLD.'
+        };
+    } else if (t.includes('ism manufacturing')) {
+        return {
+            summary: 'Indeks aktivitas manufaktur AS berdasarkan survei manajer pembelian di lebih dari 300 perusahaan manufaktur (ambang batas ekspansi = 50.0).',
+            whyImportant: 'Sektor manufaktur sangat sensitif terhadap suku bunga dan menjadi indikator awal siklus ekspansi atau kontraksi ekonomi AS.',
+            impactRule: 'Actual > Forecast = Manufaktur bergairah, ekonomi AS kuat, USD Menguat -> SELL GOLD. Actual < Forecast = Manufaktur lesu -> BUY GOLD.'
+        };
+    } else if (t.includes('ism services') || t.includes('non-manufacturing')) {
+        return {
+            summary: 'Indeks aktivitas sektor jasa AS (lebih dari 75% PDB AS berasal dari sektor jasa).',
+            whyImportant: 'Mengukur denyut nadi perekonomian AS sesungguhnya. Tekanan upah di sektor jasa adalah sumber inflasi paling lengket (sticky).',
+            impactRule: 'Actual > Forecast = Sektor jasa kuat, USD Menguat -> SELL GOLD. Actual < Forecast = USD Tertekan -> BUY GOLD.'
+        };
+    } else if (t.includes('retail sales')) {
+        return {
+            summary: 'Mengukur total penerimaan toko ritel di AS (tidak termasuk jasa).',
+            whyImportant: 'Konsumsi konsumen menyumbang ~70% PDB AS. Pengeluaran ritel yang tinggi mencerminkan ekonomi yang masih sangat panas.',
+            impactRule: 'Actual > Forecast = Belanja konsumen kencang, USD Menguat -> SELL GOLD. Actual < Forecast = Daya beli lesu -> BUY GOLD.'
+        };
+    } else if (t.includes('gdp')) {
+        return {
+            summary: 'Gross Domestic Product (PDB) adalah nilai moneter total seluruh barang dan jasa akhir yang diproduksi di AS.',
+            whyImportant: 'Kartu laporan kesehatan ekonomi AS secara keseluruhan.',
+            impactRule: 'Actual > Forecast = Pertumbuhan ekonomi tinggi, The Fed tahan bunga -> SELL GOLD. Actual < Forecast = Resesi membayangi -> BUY GOLD.'
+        };
+    } else if (t.includes('sentiment') || t.includes('confidence')) {
+        return {
+            summary: 'Survei tingkat optimisme dan keyakinan konsumen terhadap kondisi keuangan pribadi dan prospek ekonomi jangka pendek & panjang.',
+            whyImportant: 'Konsumen yang optimis cenderung belanja lebih banyak, menopang pertumbuhan laba perusahaan dan ekonomi.',
+            impactRule: 'Actual > Forecast = Sentimen cerah, USD Menguat -> SELL GOLD. Actual < Forecast = Pesimisme meningkat -> BUY GOLD.'
+        };
+    } else if (t.includes('fed') || t.includes('fomc') || t.includes('rate')) {
+        return {
+            summary: 'Keputusan suku bunga acuan Federal Funds Rate & Pernyataan Kebijakan Moneter Komite Pasar Terbuka Federal (FOMC).',
+            whyImportant: 'Katalis fundamental nomor satu untuk seluruh instrumen keuangan dunia termasuk XAUUSD.',
+            impactRule: 'Rate Hike / Hawkish = Biaya modal tinggi, emas tanpa imbal hasil ditinggalkan -> SELL GOLD. Rate Cut / Dovish = Emas Meroket -> BUY GOLD.'
+        };
+    }
+    return {
+        summary: `Rilis data indikator makroekonomi AS: ${title}.`,
+        whyImportant: 'Mempengaruhi sentimen suku bunga Federal Reserve, imbal hasil obligasi US Treasury, dan valuasi indeks Dolar AS.',
+        impactRule: 'Actual > Forecast = USD Menguat (Hawkish) -> Potensi Koreksi XAUUSD (SELL). Actual < Forecast = USD Melemah -> Potensi Rebound XAUUSD (BUY).'
+    };
+}
+
 async function generateTodaySchedule() {
     scheduledNews = [];
     
@@ -980,6 +1069,7 @@ async function generateTodaySchedule() {
                         targetTs = itemDate.getTime();
                     }
                     
+                    const insights = getNewsInsights(item.title);
                     const newsItem = {
                         id: item.id || `news-api-${index}`,
                         title: item.title,
@@ -991,9 +1081,9 @@ async function generateTodaySchedule() {
                         forecast: item.forecast || '-',
                         prev: item.prev || '-',
                         actual: item.actual,
-                        summary: item.summary || 'Data indikator ekonomi AS yang mempengaruhi pergerakan pasar.',
-                        whyImportant: item.whyImportant || 'Mempengaruhi sentimen suku bunga Federal Reserve & valuasi USD.',
-                        impactRule: item.impactRule || 'Penyimpangan data aktual terhadap forecast memicu pergerakan harga emas XAUUSD.',
+                        summary: item.summary || insights.summary,
+                        whyImportant: item.whyImportant || insights.whyImportant,
+                        impactRule: item.impactRule || insights.impactRule,
                         notifiedStages: new Set()
                     };
                     

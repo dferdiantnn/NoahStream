@@ -11,7 +11,7 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="icon" type="image/png" href="logo.png">
-    <link rel="stylesheet" href="styles.css?v=2.5">
+    <link rel="stylesheet" href="styles.css?v=2.6">
 </head>
 <body>
 
@@ -32,7 +32,11 @@
                 <img src="logo.png" alt="FERR NOAH.ID" class="brand-logo-img" />
                 <span>Noah <strong>Stream</strong></span>
             </div>
-            <div id="realtimeClock" class="clock">Loading Time...</div>
+            <div class="brand-meta-row">
+                <span class="app-version-badge">v2.6 Pro</span>
+                <span class="version-dot"></span>
+                <div id="realtimeClock" class="clock">Loading Time...</div>
+            </div>
         </div>
         <div class="controls">
             <!-- Group 1: Stream Input -->
@@ -85,7 +89,7 @@
                     <i data-lucide="radio"></i>
                     <span>Live Finder</span>
                 </button>
-                <button class="btn-news" onclick="toggleNewsPanel()" title="TradingView Market & Economic News">
+                <button class="btn-news" onclick="openNewsTab('tabNews')" title="TradingView Market & Economic News">
                     <i data-lucide="trending-up"></i>
                     <span>News XAUUSD</span>
                 </button>
@@ -272,15 +276,15 @@
         </div>
         <div class="news-content">
             <div class="tab-buttons">
-                <button class="tab-btn active" onclick="switchTab('tabLiveChart', this)"><i data-lucide="line-chart" style="width:13px;height:13px;margin-right:4px;"></i>Live Chart</button>
+                <button class="tab-btn active" onclick="switchTab('tabNews', this)"><i data-lucide="newspaper" style="width:13px;height:13px;margin-right:4px;"></i>News</button>
+                <button class="tab-btn" onclick="switchTab('tabLiveChart', this)"><i data-lucide="line-chart" style="width:13px;height:13px;margin-right:4px;"></i>Live Chart</button>
                 <button class="tab-btn" onclick="switchTab('tabEaSignals', this)"><i data-lucide="zap" style="width:13px;height:13px;margin-right:4px;"></i>EA Signals</button>
-                <button class="tab-btn" onclick="switchTab('tabNews', this)"><i data-lucide="newspaper" style="width:13px;height:13px;margin-right:4px;"></i>News</button>
                 <button class="tab-btn" onclick="switchTab('tabTechnical', this)"><i data-lucide="gauge" style="width:13px;height:13px;margin-right:4px;"></i>Technical</button>
                 <button class="tab-btn" onclick="switchTab('tabCalendar', this)"><i data-lucide="calendar" style="width:13px;height:13px;margin-right:4px;"></i>Calendar</button>
             </div>
             
             <!-- Tab 1: Live Interactive Candlestick Chart (TradingView Advanced Real-Time Widget) -->
-            <div id="tabLiveChart" class="tab-pane active" style="flex: 1; height: 100%; display: flex; flex-direction: column;">
+            <div id="tabLiveChart" class="tab-pane">
                 <div class="chart-status-bar">
                     <div class="chart-symbol-badge">
                         <span class="live-indicator-dot"></span>
@@ -346,7 +350,7 @@
             </div>
 
             <!-- Tab 3: News List & Auto Predictive Engine -->
-            <div id="tabNews" class="tab-pane" style="padding: 16px; overflow-y: auto; flex: 1; min-height: 0;">
+            <div id="tabNews" class="tab-pane active" style="padding: 16px; overflow-y: auto; flex: 1; min-height: 0;">
                 <div class="news-dashboard-header">
                     <div>
                         <h3>High-Impact News & Predictive Analytics</h3>
@@ -464,6 +468,6 @@
 
     <!-- Script API wajib dipanggil di HTML -->
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="script.js?v=2.5"></script>
+    <script src="script.js?v=2.6"></script>
 </body>
 </html>

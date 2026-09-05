@@ -130,6 +130,81 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(events, ensure_ascii=False).encode('utf-8'))
 
+def get_news_insights(title):
+    t = title.lower()
+    if 'non-farm' in t or 'nfp' in t:
+        return {
+            'summary': 'Non-Farm Payrolls (NFP) mengukur perubahan jumlah tenaga kerja AS di luar sektor pertanian & pemerintahan selama bulan sebelumnya.',
+            'whyImportant': 'Indikator nomor 1 paling volatil di pasar global. Menjadi acuan mutlak The Fed dalam menentukan kebijakan suku bunga acuan.',
+            'impactRule': 'Actual > Forecast = Ekonomi kuat, USD Bullish -> SELL GOLD (XAUUSD Turun). Actual < Forecast = USD Melemah -> BUY GOLD (XAUUSD Terbang).'
+        }
+    elif 'unemployment rate' in t:
+        return {
+            'summary': 'Persentase dari total angkatan kerja AS yang saat ini menganggur namun aktif mencari pekerjaan.',
+            'whyImportant': 'Mandat ganda Federal Reserve adalah stabilitas harga (inflasi) dan penyerapan tenaga kerja maksimal.',
+            'impactRule': 'Actual < Forecast = Pengangguran turun, pasar tenaga kerja ketat, USD Naik -> SELL GOLD. Actual > Forecast = Pengangguran naik, USD Turun -> BUY GOLD.'
+        }
+    elif 'cpi' in t:
+        return {
+            'summary': 'Consumer Price Index (CPI) mengukur rata-rata perubahan harga sekeranjang barang dan jasa konsumen dari waktu ke waktu.',
+            'whyImportant': 'Tolok ukur inflasi utama. Jika inflasi tetap tinggi (panas), The Fed akan menunda atau mengurangi pemotongan suku bunga.',
+            'impactRule': 'Actual > Forecast = Inflasi panas, Fed Hawkish, USD Meroket -> SELL GOLD. Actual < Forecast = Inflasi dingin, Fed Dovish -> BUY GOLD.'
+        }
+    elif 'ppi' in t:
+        return {
+            'summary': 'Producer Price Index (PPI) mengukur perubahan rata-rata harga jual yang diterima produsen domestik untuk output mereka.',
+            'whyImportant': 'Leading indicator (sinyal awal) untuk CPI. Kenaikan biaya produksi produsen biasanya akan diteruskan kepada konsumen.',
+            'impactRule': 'Actual > Forecast = Biaya produsen naik, potensi inflasi naik, USD Menguat -> SELL GOLD. Actual < Forecast = USD Lemah -> BUY GOLD.'
+        }
+    elif 'jobless claims' in t or 'unemployment claims' in t:
+        return {
+            'summary': 'Jumlah individu warga AS yang pertama kali mengajukan klaim asuransi pengangguran selama pekan lalu.',
+            'whyImportant': 'Data frekuensi mingguan tercepat untuk memantau kesehatan sektor ketenagakerjaan AS.',
+            'impactRule': 'Actual > Forecast = Lebih banyak PHK / pelemahan tenaga kerja, USD Turun -> BUY GOLD. Actual < Forecast = Tenaga kerja solid -> SELL GOLD.'
+        }
+    elif 'ism manufacturing' in t:
+        return {
+            'summary': 'Indeks aktivitas manufaktur AS berdasarkan survei manajer pembelian di lebih dari 300 perusahaan manufaktur (ambang batas ekspansi = 50.0).',
+            'whyImportant': 'Sektor manufaktur sangat sensitif terhadap suku bunga dan menjadi indikator awal siklus ekspansi atau kontraksi ekonomi AS.',
+            'impactRule': 'Actual > Forecast = Manufaktur bergairah, ekonomi AS kuat, USD Menguat -> SELL GOLD. Actual < Forecast = Manufaktur lesu -> BUY GOLD.'
+        }
+    elif 'ism services' in t or 'non-manufacturing' in t:
+        return {
+            'summary': 'Indeks aktivitas sektor jasa AS (lebih dari 75% PDB AS berasal dari sektor jasa).',
+            'whyImportant': 'Mengukur denyut nadi perekonomian AS sesungguhnya. Tekanan upah di sektor jasa adalah sumber inflasi paling lengket (sticky).',
+            'impactRule': 'Actual > Forecast = Sektor jasa kuat, USD Menguat -> SELL GOLD. Actual < Forecast = USD Tertekan -> BUY GOLD.'
+        }
+    elif 'retail sales' in t:
+        return {
+            'summary': 'Mengukur total penerimaan toko ritel di AS (tidak termasuk jasa).',
+            'whyImportant': 'Konsumsi konsumen menyumbang ~70% PDB AS. Pengeluaran ritel yang tinggi mencerminkan ekonomi yang masih sangat panas.',
+            'impactRule': 'Actual > Forecast = Belanja konsumen kencang, USD Menguat -> SELL GOLD. Actual < Forecast = Daya beli lesu -> BUY GOLD.'
+        }
+    elif 'gdp' in t:
+        return {
+            'summary': 'Gross Domestic Product (PDB) adalah nilai moneter total seluruh barang dan jasa akhir yang diproduksi di AS.',
+            'whyImportant': 'Kartu laporan kesehatan ekonomi AS secara keseluruhan.',
+            'impactRule': 'Actual > Forecast = Pertumbuhan ekonomi tinggi, The Fed tahan bunga -> SELL GOLD. Actual < Forecast = Resesi membayangi -> BUY GOLD.'
+        }
+    elif 'sentiment' in t or 'confidence' in t:
+        return {
+            'summary': 'Survei tingkat optimisme dan keyakinan konsumen terhadap kondisi keuangan pribadi dan prospek ekonomi jangka pendek & panjang.',
+            'whyImportant': 'Konsumen yang optimis cenderung belanja lebih banyak, menopang pertumbuhan laba perusahaan dan ekonomi.',
+            'impactRule': 'Actual > Forecast = Sentimen cerah, USD Menguat -> SELL GOLD. Actual < Forecast = Pesimisme meningkat -> BUY GOLD.'
+        }
+    elif 'fed' in t or 'fomc' in t or 'rate' in t:
+        return {
+            'summary': 'Keputusan suku bunga acuan Federal Funds Rate & Pernyataan Kebijakan Moneter Komite Pasar Terbuka Federal (FOMC).',
+            'whyImportant': 'Katalis fundamental nomor satu untuk seluruh instrumen keuangan dunia termasuk XAUUSD.',
+            'impactRule': 'Rate Hike / Hawkish = Biaya modal tinggi, emas tanpa imbal hasil ditinggalkan -> SELL GOLD. Rate Cut / Dovish = Emas Meroket -> BUY GOLD.'
+        }
+    else:
+        return {
+            'summary': f'Rilis data indikator makroekonomi AS: {title}.',
+            'whyImportant': 'Mempengaruhi sentimen suku bunga Federal Reserve, imbal hasil obligasi US Treasury, dan valuasi indeks Dolar AS.',
+            'impactRule': 'Actual > Forecast = USD Menguat (Hawkish) -> Potensi Koreksi XAUUSD (SELL). Actual < Forecast = USD Melemah -> Potensi Rebound XAUUSD (BUY).'
+        }
+
     def fetch_economic_calendar(self):
         global calendar_cache
         now = time.time()
@@ -175,6 +250,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                         except Exception:
                             pass
 
+                        insights = get_news_insights(title)
                         events.append({
                             'id': f"ff-{date_str}-{time_str}-{title}".replace(' ', '-').lower(),
                             'title': title,
@@ -185,7 +261,10 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                             'timestamp': timestamp_ms,
                             'forecast': forecast if forecast else "-",
                             'prev': prev if prev else "-",
-                            'actual': actual if actual else None
+                            'actual': actual if actual else None,
+                            'summary': insights['summary'],
+                            'whyImportant': insights['whyImportant'],
+                            'impactRule': insights['impactRule']
                         })
         except Exception as e:
             print("ForexFactory XML fetch error:", e)
