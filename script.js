@@ -985,12 +985,15 @@ async function generateTodaySchedule() {
                         title: item.title,
                         country: item.country || 'USD',
                         impact: item.impact || 'high',
-                        date: item.date,
+                        date: item.date || 'Upcoming',
                         timeStr: item.timeStr,
                         targetTimestamp: targetTs,
                         forecast: item.forecast || '-',
                         prev: item.prev || '-',
                         actual: item.actual,
+                        summary: item.summary || 'Data indikator ekonomi AS yang mempengaruhi pergerakan pasar.',
+                        whyImportant: item.whyImportant || 'Mempengaruhi sentimen suku bunga Federal Reserve & valuasi USD.',
+                        impactRule: item.impactRule || 'Penyimpangan data aktual terhadap forecast memicu pergerakan harga emas XAUUSD.',
                         notifiedStages: new Set()
                     };
                     
@@ -1008,7 +1011,7 @@ async function generateTodaySchedule() {
         console.warn("Could not fetch live economic calendar from backend:", err);
     }
 
-    // If API returned nothing or offline, fallback to realistic verified calendar events
+    // If API returned nothing or offline, fallback to realistic verified calendar events matching user screenshot
     if (scheduledNews.length === 0) {
         const defaultEvents = [
             {
@@ -1016,10 +1019,15 @@ async function generateTodaySchedule() {
                 title: 'Non-Farm Employment Change (NFP)',
                 country: 'USD',
                 impact: 'high',
+                date: 'Jumat, 4 Sep 2026',
                 timeStr: '19:30:00',
-                forecast: '55K',
-                prev: '-23K',
+                targetTimestamp: 1788525000000,
+                forecast: '165K',
+                prev: '142K',
                 actual: '162K',
+                summary: 'Non-Farm Payrolls mengukur perubahan jumlah tenaga kerja AS di luar sektor pertanian.',
+                whyImportant: 'Indikator nomor 1 penggerak pasar XAUUSD & penentu suku bunga Federal Reserve.',
+                impactRule: 'Actual < Forecast = USD Bearish / Dovish = Emas Menguat (BUY GOLD). Sebaliknya jika Actual > Forecast = Emas Tertekan (SELL GOLD).',
                 notifiedStages: new Set()
             },
             {
@@ -1027,32 +1035,111 @@ async function generateTodaySchedule() {
                 title: 'US Unemployment Rate',
                 country: 'USD',
                 impact: 'high',
+                date: 'Jumat, 4 Sep 2026',
                 timeStr: '19:30:00',
-                forecast: '4.1%',
-                prev: '4.1%',
+                targetTimestamp: 1788525000000,
+                forecast: '4.2%',
+                prev: '4.3%',
                 actual: '4.1%',
+                summary: 'Persentase angkatan kerja AS yang menganggur dan aktif mencari pekerjaan.',
+                whyImportant: 'Mencerminkan ketatnya pasar tenaga kerja AS.',
+                impactRule: 'Actual < Forecast = Angka pengangguran membaik, USD Menguat = SELL GOLD.',
                 notifiedStages: new Set()
             },
             {
-                id: 'cpi-upcoming',
-                title: 'US Core CPI m/m',
+                id: 'nfib-sep8',
+                title: 'NFIB Small Business Optimism',
+                country: 'USD',
+                impact: 'medium',
+                date: 'Selasa, 8 Sep 2026',
+                timeStr: '21:00:00',
+                targetTimestamp: 1788876000000,
+                forecast: '99.2',
+                prev: '99.8',
+                actual: null,
+                summary: 'Survei tingkat optimisme pemilik usaha kecil di AS terhadap prospek ekonomi.',
+                whyImportant: 'Bisnis kecil mencakup 50% ketenagakerjaan swasta di Amerika Serikat.',
+                impactRule: 'Actual > Forecast = Optimisme tinggi (USD Menguat / SELL GOLD). Actual < Forecast = USD Melemah / BUY GOLD.',
+                notifiedStages: new Set()
+            },
+            {
+                id: 'core-ppi-sep10',
+                title: 'Core PPI m/m (Producer Price Index)',
                 country: 'USD',
                 impact: 'high',
+                date: 'Kamis, 10 Sep 2026',
                 timeStr: '19:30:00',
-                forecast: '0.2%',
-                prev: '0.3%',
+                targetTimestamp: 1789043400000,
+                forecast: '0.3%',
+                prev: '0.2%',
                 actual: null,
+                summary: 'Mengukur perubahan harga di tingkat produsen/grosir di luar sektor makanan dan energi.',
+                whyImportant: 'Leading indicator utama untuk inflasi konsumen (CPI) bulan berikutnya.',
+                impactRule: 'Actual > Forecast = Inflasi produsen naik, The Fed hawkish = USD Menguat (SELL GOLD). Actual < Forecast = USD Melemah (BUY GOLD).',
                 notifiedStages: new Set()
             },
             {
-                id: 'fomc-upcoming',
-                title: 'Fed Interest Rate Decision',
+                id: 'jobless-claims-sep10',
+                title: 'Unemployment Claims (Klaim Pengangguran Awal)',
                 country: 'USD',
                 impact: 'high',
-                timeStr: '01:00:00',
-                forecast: '5.25%',
-                prev: '5.50%',
+                date: 'Kamis, 10 Sep 2026',
+                timeStr: '19:30:00',
+                targetTimestamp: 1789043400000,
+                forecast: '205K',
+                prev: '206K',
                 actual: null,
+                summary: 'Jumlah individu yang pertama kali mengajukan asuransi pengangguran selama minggu lalu.',
+                whyImportant: 'Data mingguan paling update untuk mengukur kesehatan tenaga kerja AS.',
+                impactRule: 'Actual > Forecast = PHK meningkat, USD Melemah (BUY GOLD). Actual < Forecast = Tenaga kerja solid, USD Menguat (SELL GOLD).',
+                notifiedStages: new Set()
+            },
+            {
+                id: 'cpi-mm-sep11',
+                title: 'CPI m/m (Consumer Price Index)',
+                country: 'USD',
+                impact: 'high',
+                date: 'Jumat, 11 Sep 2026',
+                timeStr: '19:30:00',
+                targetTimestamp: 1789129800000,
+                forecast: '0.4%',
+                prev: '0.1%',
+                actual: null,
+                summary: 'Tingkat inflasi harga barang dan jasa yang dibayar oleh konsumen akhir di AS.',
+                whyImportant: 'Penggerak pasar paling agresif bersama NFP. Menentukan arah kebijakan pemotongan suku bunga Fed.',
+                impactRule: 'Actual < Forecast = Inflasi mendingin, peluang cut rate naik -> USD Jatuh -> BUY GOLD. Actual > Forecast = Inflasi panas -> SELL GOLD.',
+                notifiedStages: new Set()
+            },
+            {
+                id: 'core-cpi-sep11',
+                title: 'Core CPI m/m',
+                country: 'USD',
+                impact: 'high',
+                date: 'Jumat, 11 Sep 2026',
+                timeStr: '19:30:00',
+                targetTimestamp: 1789129800000,
+                forecast: '0.2%',
+                prev: '0.2%',
+                actual: null,
+                summary: 'Inflasi inti konsumen tidak termasuk makanan dan energi yang volatil.',
+                whyImportant: 'Acuan utama favorit Federal Reserve dalam menghitung inflasi struktural.',
+                impactRule: 'Actual < Forecast = Dovish = BUY GOLD. Actual > Forecast = Hawkish = SELL GOLD.',
+                notifiedStages: new Set()
+            },
+            {
+                id: 'uom-sentiment-sep11',
+                title: 'Prelim UoM Consumer Sentiment',
+                country: 'USD',
+                impact: 'high',
+                date: 'Jumat, 11 Sep 2026',
+                timeStr: '21:00:00',
+                targetTimestamp: 1789135200000,
+                forecast: '51.0',
+                prev: '51.7',
+                actual: null,
+                summary: 'Survei University of Michigan terhadap tingkat keyakinan konsumen pada stabilitas ekonomi.',
+                whyImportant: 'Konsumsi rumah tangga menyumbang ~70% dari PDB ekonomi AS.',
+                impactRule: 'Actual > Forecast = Konsumen belanja lebih banyak, USD Menguat (SELL GOLD). Actual < Forecast = Resesi ketakutan naik (BUY GOLD).',
                 notifiedStages: new Set()
             }
         ];
@@ -1064,6 +1151,22 @@ async function generateTodaySchedule() {
     }
 
     renderNewsDashboard();
+}
+
+function toggleNewsDetail(newsId) {
+    const content = document.getElementById(`detail-${newsId}`);
+    const btn = document.getElementById(`btn-detail-${newsId}`);
+    if (!content) return;
+
+    content.classList.toggle('hidden');
+    const isHidden = content.classList.contains('hidden');
+
+    if (btn) {
+        btn.innerHTML = isHidden 
+            ? `<i data-lucide="chevron-down" style="width:13px;height:13px;"></i><span>Detail & Analisa</span>`
+            : `<i data-lucide="chevron-up" style="width:13px;height:13px;"></i><span>Tutup Detail</span>`;
+        if (window.lucide) lucide.createIcons();
+    }
 }
 
 function renderNewsDashboard() {
@@ -1098,9 +1201,14 @@ function renderNewsDashboard() {
                 </div>
             `;
         
+        const summaryText = news.summary || 'Data indikator makroekonomi AS.';
+        const whyImportantText = news.whyImportant || 'Mempengaruhi suku bunga The Fed dan volatilitas XAUUSD.';
+        const impactRuleText = news.impactRule || 'Penyimpangan data aktual terhadap forecast memicu pergerakan harga emas.';
+        const fullDateTimeStr = news.date ? `${news.date} • ${news.timeStr} WIB` : `${news.timeStr} WIB`;
+
         item.innerHTML = `
             <div class="news-item-top">
-                <div>
+                <div style="flex:1;">
                     <div class="news-title">${news.title}</div>
                     <div class="news-data">
                         <span>Forecast: <strong>${news.forecast}</strong></span>
@@ -1108,13 +1216,35 @@ function renderNewsDashboard() {
                         <span style="color:var(--primary);font-weight:700;">• High Impact</span>
                     </div>
                 </div>
-                <div style="text-align: right;">
-                    <div class="news-time">${news.timeStr}</div>
+                <div style="text-align: right; flex-shrink: 0; margin-left: 10px;">
+                    <div class="news-time">${fullDateTimeStr}</div>
                     ${statusHtml}
                 </div>
             </div>
             <div class="news-result-box" id="result-${news.id}">
                 ${resultHtml}
+            </div>
+            
+            <!-- Detail Accordion Toggle Button -->
+            <button type="button" class="news-detail-btn" id="btn-detail-${news.id}" onclick="toggleNewsDetail('${news.id}')">
+                <i data-lucide="chevron-down" style="width:13px;height:13px;"></i>
+                <span>Detail & Analisa</span>
+            </button>
+
+            <!-- Expandable Details Content Box -->
+            <div class="news-detail-content hidden" id="detail-${news.id}">
+                <div class="detail-row">
+                    <div class="detail-section-title"><i data-lucide="info" style="width:13px;height:13px;"></i> Apa itu Berita Ini?</div>
+                    <p>${summaryText}</p>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-section-title"><i data-lucide="crosshair" style="width:13px;height:13px;"></i> Kenapa Trader Emas Wajib Tahu?</div>
+                    <p>${whyImportantText}</p>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-section-title"><i data-lucide="zap" style="width:13px;height:13px;"></i> Aturan Dampak ke XAUUSD:</div>
+                    <p style="color:var(--text-primary);font-weight:500;">${impactRuleText}</p>
+                </div>
             </div>
         `;
         container.appendChild(item);
