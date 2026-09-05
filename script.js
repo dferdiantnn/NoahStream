@@ -66,26 +66,22 @@ function reloadTradingViewWidgets(lang) {
         tabTech.querySelector('.tradingview-widget-container').appendChild(scriptTech);
     }
 
-    // 3. Economic Calendar Widget (TradingView Embed)
-    const tvCal = document.getElementById('tvCalendarContainer');
-    if (tvCal) {
-        tvCal.innerHTML = `
-            <div class="tradingview-widget-container__widget" style="height: 100%;"></div>
-        `;
-        const scriptCal = document.createElement('script');
-        scriptCal.type = 'text/javascript';
-        scriptCal.src = 'https://s3.tradingview.com/external-embedding/embed-widget-events.js';
-        scriptCal.async = true;
-        scriptCal.innerHTML = JSON.stringify({
+    // 3. Economic Calendar Widget (TradingView Authentic Embed with Auto-Translation)
+    const eventsIframe = document.getElementById('tv_events_iframe');
+    if (eventsIframe) {
+        const tvConfig = encodeURIComponent(JSON.stringify({
             "colorTheme": "dark",
             "isTransparent": true,
             "width": "100%",
             "height": "100%",
             "locale": tvLocale,
             "importanceFilter": "0,1",
-            "countryFilter": "us"
-        });
-        tvCal.appendChild(scriptCal);
+            "countryFilter": "us",
+            "utm_source": "localhost",
+            "utm_medium": "widget",
+            "utm_campaign": "events"
+        }));
+        eventsIframe.src = `/embed-widget/events/?locale=${tvLocale}#${tvConfig}`;
     }
 }
 

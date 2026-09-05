@@ -111,8 +111,238 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_check_live(parsed.query)
         elif parsed.path == '/api/economic-calendar':
             self.handle_economic_calendar()
+        elif parsed.path.startswith('/embed-widget/events'):
+            self.handle_tv_events_proxy(parsed)
         else:
             super().do_GET()
+
+    def handle_tv_events_proxy(self, parsed):
+        target_url = 'https://www.tradingview-widget.com' + parsed.path
+        if parsed.query:
+            target_url += '?' + parsed.query
+        else:
+            target_url += '?locale=id'
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7'
+        }
+        
+        try:
+            req = urllib.request.Request(target_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=10) as response:
+                content = response.read().decode('utf-8', errors='replace')
+                
+                injection_script = """
+<script>
+(function() {
+    const descDictionary = [
+        {
+            test: /consumer price index|pricespaid|CPIis|basket of goods/i,
+            replacement: "Indeks Harga Konsumen (CPI) mengukur perubahan rata-rata harga yang dibayarkan konsumen perkotaan untuk sekeranjang barang dan jasa tetap (makanan, energi, perumahan, pakaian, transportasi, dan layanan kesehatan). Ini merupakan tolok ukur inflasi utama yang diawasi ketat oleh Federal Reserve dalam menentukan kebijakan suku bunga acuan."
+        },
+        {
+            test: /producer price index|prices received by domestic producers/i,
+            replacement: "Indeks Harga Produsen (PPI) mengukur perubahan rata-rata harga jual yang diterima produsen domestik untuk output mereka. Kenaikan harga di tingkat pabrik dan grosir merupakan sinyal awal (leading indicator) inflasi yang nantinya akan diteruskan kepada konsumen akhir."
+        },
+        {
+            test: /unemployment insurance|first time.*claims|individuals filed for unemployment|initial claims/i,
+            replacement: "Klaim Pengangguran Awal mengukur jumlah individu yang pertama kali mengajukan klaim tunjangan asuransi pengangguran selama pekan sebelumnya. Merupakan data ketenagakerjaan mingguan paling segar untuk memantau kesehatan sektor tenaga kerja AS."
+        },
+        {
+            test: /continuing claims|continued claims/i,
+            replacement: "Klaim Pengangguran Lanjutan mengukur jumlah warga yang masih terus menerima bantuan pengangguran setelah klaim awal. Mengindikasikan durasi rata-rata seseorang menganggur sebelum mendapatkan pekerjaan baru."
+        },
+        {
+            test: /university of michigan|consumer sentiment|financial conditions.*expectations/i,
+            replacement: "Survei Sentimen Konsumen University of Michigan mengukur tingkat keyakinan dan optimisme konsumen terhadap kondisi keuangan pribadi dan prospek ekonomi jangka pendek maupun panjang. Mengingat belanja konsumen menyumbang 70% PDB AS, sentimen konsumen adalah penggerak utama aktivitas ekonomi."
+        },
+        {
+            test: /retail sales|store receipts|retail trade/i,
+            replacement: "Penjualan Ritel mengukur total pengeluaran uang oleh masyarakat di toko ritel seluruh AS. Merupakan indikator utama belanja konsumen riil di luar sektor jasa."
+        },
+        {
+            test: /gross domestic product|total dollar value of all goods/i,
+            replacement: "Produk Domestik Bruto (PDB/GDP) mengukur total nilai moneter seluruh barang dan jasa akhir yang diproduksi di AS. Merupakan rapor pertumbuhan ekonomi secara menyeluruh."
+        },
+        {
+            test: /federal funds rate|federal reserve.*interest rate|fomc statement/i,
+            replacement: "Keputusan penetapan suku bunga acuan Federal Reserve (FOMC). Perubahan suku bunga mempengaruhi likuiditas global dan imbal hasil obligasi, yang berdampak langsung pada harga emas dunia."
+        },
+        {
+            test: /purchasing managers|manufacturing activity|ism manufacturing/i,
+            replacement: "Indeks Manajer Pembelian (PMI) Manufaktur ISM mengukur tingkat aktivitas manajer pembelian di sektor manufaktur. Angka di atas 50 menunjukkan sektor manufaktur sedang berekspansi."
+        },
+        {
+            test: /ism services|services sector|non-manufacturing/i,
+            replacement: "Indeks Sektor Jasa ISM mengukur denyut aktivitas bisnis di sektor jasa, yang menyumbang lebih dari tiga perempat perekonomian AS."
+        },
+        {
+            test: /non-farm|nonfarm|total nonfarm payroll/i,
+            replacement: "Non-Farm Payrolls (NFP) mengukur perubahan jumlah tenaga kerja AS di luar sektor pertanian & pemerintahan selama bulan sebelumnya. Merupakan rilis data fundamental paling volatil di pasar keuangan dunia."
+        },
+        {
+            test: /unemployment rate|percentage of total labor force/i,
+            replacement: "Tingkat Pengangguran mengukur persentase angkatan kerja AS yang saat ini aktif mencari pekerjaan namun belum bekerja. Mandat utama The Fed bersama stabilitas harga."
+        },
+        {
+            test: /durable goods/i,
+            replacement: "Pesanan Barang Tahan Lama mengukur pesanan baru barang industri dengan masa pakai minimal 3 tahun, mencerminkan optimisme investasi modal jangka panjang sektor bisnis."
+        },
+        {
+            test: /trade balance|balance of trade/i,
+            replacement: "Neraca Perdagangan mengukur selisih antara nilai ekspor dan impor barang serta jasa di AS."
+        },
+        {
+            test: /crude oil|eia petroleum/i,
+            replacement: "Persediaan Minyak Mentah EIA mengukur perubahan mingguan pasokan minyak komersial AS, mempengaruhi tren inflasi energi."
+        }
+    ];
+
+    const titleMap = [
+        [/Core CPI MM, SA/gi, "Core CPI Bulanan (SA)"],
+        [/Core CPI YY, NSA/gi, "Core CPI Tahunan (NSA)"],
+        [/CPI MM, SA/gi, "CPI Bulanan (SA)"],
+        [/CPI YY, NSA/gi, "CPI Tahunan (NSA)"],
+        [/Core PPI MM, SA/gi, "Core PPI Bulanan (SA)"],
+        [/Core PPI YY, NSA/gi, "Core PPI Tahunan (NSA)"],
+        [/PPI MM, SA/gi, "PPI Bulanan (SA)"],
+        [/PPI YY, NSA/gi, "PPI Tahunan (NSA)"],
+        [/Initial Jobless Claims/gi, "Klaim Pengangguran Awal"],
+        [/Continuing Jobless Claims/gi, "Klaim Pengangguran Lanjutan"],
+        [/Retail Sales MM/gi, "Penjualan Ritel Bulanan"],
+        [/Retail Sales Ex-Autos MM/gi, "Penjualan Ritel Inti Bulanan"],
+        [/Michigan Consumer Sentiment Prelim/gi, "Sentimen Konsumen Michigan (Prelim)"],
+        [/Michigan Consumer Expectations Prelim/gi, "Ekspektasi Konsumen Michigan (Prelim)"],
+        [/Fed Interest Rate Decision/gi, "Keputusan Suku Bunga The Fed"],
+        [/FOMC Economic Projections/gi, "Proyeksi Ekonomi FOMC (Dot Plot)"],
+        [/FOMC Statement/gi, "Pernyataan Kebijakan FOMC"],
+        [/ISM Manufacturing PMI/gi, "PMI Manufaktur ISM"],
+        [/ISM Services PMI/gi, "PMI Jasa ISM"]
+    ];
+
+    // 1. Data-layer translation via window.fetch interception
+    const origFetch = window.fetch;
+    if (origFetch) {
+        window.fetch = async function(...args) {
+            const res = await origFetch.apply(this, args);
+            const url = (args[0] || '').toString();
+            if (url.includes('chartevents') || url.includes('events') || url.includes('economic-calendar')) {
+                try {
+                    const clone = res.clone();
+                    const data = await clone.json();
+                    if (data && Array.isArray(data.result)) {
+                        data.result.forEach(item => {
+                            if (item.comment) {
+                                for (const dict of descDictionary) {
+                                    if (dict.test.test(item.comment)) {
+                                        item.comment = dict.replacement;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (item.title) {
+                                for (const [re, rep] of titleMap) {
+                                    if (re.test(item.title)) {
+                                        item.title = item.title.replace(re, rep);
+                                    }
+                                }
+                            }
+                        });
+                        return new Response(JSON.stringify(data), {
+                            status: res.status,
+                            statusText: res.statusText,
+                            headers: res.headers
+                        });
+                    }
+                } catch (e) {}
+            }
+            return res;
+        };
+    }
+
+    // 2. DOM-layer translation (TreeWalker & MutationObserver)
+    function translateNode(node) {
+        if (!node || node.nodeType !== Node.TEXT_NODE) return;
+        const text = node.nodeValue;
+        if (!text || text.trim().length < 6) return;
+
+        for (const item of descDictionary) {
+            if (item.test.test(text)) {
+                node.nodeValue = item.replacement;
+                return;
+            }
+        }
+
+        for (const [re, rep] of titleMap) {
+            if (re.test(node.nodeValue)) {
+                node.nodeValue = node.nodeValue.replace(re, rep);
+            }
+        }
+    }
+
+    function scanAndTranslate(root) {
+        if (!root) return;
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+        let n;
+        while (n = walker.nextNode()) {
+            translateNode(n);
+        }
+    }
+
+    setInterval(() => {
+        scanAndTranslate(document.body);
+    }, 300);
+
+    const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+            if (m.type === 'childList') {
+                m.addedNodes.forEach(node => {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        scanAndTranslate(node);
+                    } else if (node.nodeType === Node.TEXT_NODE) {
+                        translateNode(node);
+                    }
+                });
+            } else if (m.type === 'characterData') {
+                translateNode(m.target);
+            }
+        }
+    });
+
+    observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+        characterData: true
+    });
+
+    document.addEventListener('click', () => {
+        setTimeout(() => scanAndTranslate(document.body), 30);
+        setTimeout(() => scanAndTranslate(document.body), 150);
+        setTimeout(() => scanAndTranslate(document.body), 400);
+    }, true);
+})();
+</script>
+"""
+                # Ensure base URL points to TradingView so all static assets load perfectly
+                base_tag = '<base href="https://www.tradingview-widget.com/">'
+                if '<head>' in content:
+                    content = content.replace('<head>', '<head>' + base_tag + injection_script, 1)
+                elif '</head>' in content:
+                    content = content.replace('</head>', base_tag + injection_script + '</head>', 1)
+                else:
+                    content = base_tag + injection_script + content
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(content.encode('utf-8'))
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-Type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(f"Proxy error: {e}".encode('utf-8'))
 
     def handle_check_live(self, query_string):
         params = urllib.parse.parse_qs(query_string)
