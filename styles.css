@@ -1965,28 +1965,39 @@ main {
 }
 
 .alert-time-pill {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-subtle);
-    color: var(--text-muted);
-    padding: 3px 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    color: #64748b;
+    opacity: 0.45;
+    padding: 4px 12px;
     border-radius: var(--radius-full);
     font-size: 0.72rem;
     font-weight: 600;
     cursor: pointer;
     user-select: none;
-    transition: all var(--transition-fast);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    filter: grayscale(80%);
 }
 
 .alert-time-pill:hover {
-    border-color: var(--border-highlight);
-    color: var(--text-primary);
+    opacity: 0.75;
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #94a3b8;
+    filter: grayscale(30%);
 }
 
 .alert-time-pill.active {
-    background: rgba(245, 158, 11, 0.18);
-    border-color: var(--accent-gold);
-    color: #fde68a;
-    box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+    background: rgba(245, 158, 11, 0.22);
+    border-color: #f59e0b;
+    color: #fef08a;
+    opacity: 1;
+    font-weight: 700;
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.45), inset 0 0 8px rgba(245, 158, 11, 0.15);
+    filter: grayscale(0%);
+    text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
 }
 
 .stage-tag {
