@@ -217,23 +217,8 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             'Accept-Language': 'en-US,en;q=0.9'
         }
 
-        # 1. High-Impact UPCOMING events for the upcoming trading week (Sep 8 - 11, 2026)
+        # 1. High-Impact UPCOMING events for the upcoming trading week (Forex Factory Red Folder USD only)
         upcoming_events = [
-            {
-                'id': 'ff-nfib-sep8',
-                'title': 'NFIB Small Business Optimism',
-                'country': 'USD',
-                'impact': 'medium',
-                'date': 'Selasa, 8 Sep 2026',
-                'timeStr': '21:00:00',
-                'timestamp': 1788876000000,
-                'forecast': '99.2',
-                'prev': '99.8',
-                'actual': None,
-                'summary': 'Survei tingkat optimisme pemilik usaha kecil di AS terhadap prospek ekonomi.',
-                'whyImportant': 'Bisnis kecil mencakup 50% ketenagakerjaan swasta di Amerika Serikat.',
-                'impactRule': 'Actual > Forecast = Optimisme tinggi (USD Menguat / SELL GOLD). Actual < Forecast = USD Melemah / BUY GOLD.'
-            },
             {
                 'id': 'ff-core-ppi-sep10',
                 'title': 'Core PPI m/m (Producer Price Index)',

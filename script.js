@@ -1175,22 +1175,6 @@ async function generateTodaySchedule() {
                 notifiedStages: new Set()
             },
             {
-                id: 'nfib-sep8',
-                title: 'NFIB Small Business Optimism',
-                country: 'USD',
-                impact: 'medium',
-                date: 'Selasa, 8 Sep 2026',
-                timeStr: '21:00:00',
-                targetTimestamp: 1788876000000,
-                forecast: '99.2',
-                prev: '99.8',
-                actual: null,
-                summary: 'Survei tingkat optimisme pemilik usaha kecil di AS terhadap prospek ekonomi.',
-                whyImportant: 'Bisnis kecil mencakup 50% ketenagakerjaan swasta di Amerika Serikat.',
-                impactRule: 'Actual > Forecast = Optimisme tinggi (USD Menguat / SELL GOLD). Actual < Forecast = USD Melemah / BUY GOLD.',
-                notifiedStages: new Set()
-            },
-            {
                 id: 'core-ppi-sep10',
                 title: 'Core PPI m/m (Producer Price Index)',
                 country: 'USD',
