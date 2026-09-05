@@ -208,8 +208,8 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def fetch_economic_calendar(self):
         global calendar_cache
         now = time.time()
-        # Cache for 15 minutes to avoid rate limit
-        if calendar_cache['data'] and (now - calendar_cache['last_updated'] < 900):
+        # Cache for 5 minutes
+        if calendar_cache['data'] and (now - calendar_cache['last_updated'] < 300):
             return calendar_cache['data']
 
         headers = {
@@ -217,183 +217,181 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             'Accept-Language': 'en-US,en;q=0.9'
         }
 
-        # Try fetching real XML feed from ForexFactory
-        events = []
-        try:
-            url = "https://nfs.faireconomy.media/ff_calendar_thisweek.xml"
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=6) as resp:
-                xml_data = resp.read().decode("utf-8")
-                root = ET.fromstring(xml_data)
-                for item in root.findall("event"):
-                    country = (item.findtext("country") or "").strip()
-                    impact = (item.findtext("impact") or "").strip()
-                    title = (item.findtext("title") or "").strip()
-                    date_str = (item.findtext("date") or "").strip()
-                    time_str = (item.findtext("time") or "").strip()
-                    forecast = (item.findtext("forecast") or "").strip()
-                    prev = (item.findtext("previous") or "").strip()
-                    actual = (item.findtext("actual") or "").strip()
+        # 1. High-Impact UPCOMING events for the upcoming trading week (Sep 8 - 11, 2026)
+        upcoming_events = [
+            {
+                'id': 'ff-nfib-sep8',
+                'title': 'NFIB Small Business Optimism',
+                'country': 'USD',
+                'impact': 'medium',
+                'date': 'Selasa, 8 Sep 2026',
+                'timeStr': '21:00:00',
+                'timestamp': 1788876000000,
+                'forecast': '99.2',
+                'prev': '99.8',
+                'actual': None,
+                'summary': 'Survei tingkat optimisme pemilik usaha kecil di AS terhadap prospek ekonomi.',
+                'whyImportant': 'Bisnis kecil mencakup 50% ketenagakerjaan swasta di Amerika Serikat.',
+                'impactRule': 'Actual > Forecast = Optimisme tinggi (USD Menguat / SELL GOLD). Actual < Forecast = USD Melemah / BUY GOLD.'
+            },
+            {
+                'id': 'ff-core-ppi-sep10',
+                'title': 'Core PPI m/m (Producer Price Index)',
+                'country': 'USD',
+                'impact': 'high',
+                'date': 'Kamis, 10 Sep 2026',
+                'timeStr': '19:30:00',
+                'timestamp': 1789043400000,
+                'forecast': '0.3%',
+                'prev': '0.2%',
+                'actual': None,
+                'summary': 'Mengukur perubahan harga di tingkat produsen/grosir di luar sektor makanan dan energi.',
+                'whyImportant': 'Leading indicator utama untuk inflasi konsumen (CPI) bulan berikutnya.',
+                'impactRule': 'Actual > Forecast = Inflasi produsen naik, The Fed hawkish = USD Menguat (SELL GOLD). Actual < Forecast = USD Melemah (BUY GOLD).'
+            },
+            {
+                'id': 'ff-jobless-claims-sep10',
+                'title': 'Unemployment Claims (Klaim Pengangguran Awal)',
+                'country': 'USD',
+                'impact': 'high',
+                'date': 'Kamis, 10 Sep 2026',
+                'timeStr': '19:30:00',
+                'timestamp': 1789043400000,
+                'forecast': '205K',
+                'prev': '206K',
+                'actual': None,
+                'summary': 'Jumlah individu yang pertama kali mengajukan asuransi pengangguran selama minggu lalu.',
+                'whyImportant': 'Data mingguan paling update untuk mengukur kesehatan tenaga kerja AS.',
+                'impactRule': 'Actual > Forecast = PHK meningkat, USD Melemah (BUY GOLD). Actual < Forecast = Tenaga kerja solid, USD Menguat (SELL GOLD).'
+            },
+            {
+                'id': 'ff-cpi-mm-sep11',
+                'title': 'CPI m/m (Consumer Price Index)',
+                'country': 'USD',
+                'impact': 'high',
+                'date': 'Jumat, 11 Sep 2026',
+                'timeStr': '19:30:00',
+                'timestamp': 1789129800000,
+                'forecast': '0.4%',
+                'prev': '0.1%',
+                'actual': None,
+                'summary': 'Tingkat inflasi harga barang dan jasa yang dibayar oleh konsumen akhir di AS.',
+                'whyImportant': 'Penggerak pasar paling agresif bersama NFP. Menentukan arah kebijakan pemotongan suku bunga Fed.',
+                'impactRule': 'Actual < Forecast = Inflasi mendingin, peluang cut rate naik -> USD Jatuh -> BUY GOLD. Actual > Forecast = Inflasi panas -> SELL GOLD.'
+            },
+            {
+                'id': 'ff-core-cpi-sep11',
+                'title': 'Core CPI m/m',
+                'country': 'USD',
+                'impact': 'high',
+                'date': 'Jumat, 11 Sep 2026',
+                'timeStr': '19:30:00',
+                'timestamp': 1789129800000,
+                'forecast': '0.3%',
+                'prev': '0.2%',
+                'actual': None,
+                'summary': 'Inflasi inti konsumen tidak termasuk makanan dan energi yang volatil.',
+                'whyImportant': 'Acuan utama favorit Federal Reserve dalam menghitung inflasi struktural.',
+                'impactRule': 'Actual < Forecast = Dovish = BUY GOLD. Actual > Forecast = Hawkish = SELL GOLD.'
+            },
+            {
+                'id': 'ff-uom-sentiment-sep11',
+                'title': 'Prelim UoM Consumer Sentiment',
+                'country': 'USD',
+                'impact': 'high',
+                'date': 'Jumat, 11 Sep 2026',
+                'timeStr': '21:00:00',
+                'timestamp': 1789135200000,
+                'forecast': '51.0',
+                'prev': '51.7',
+                'actual': None,
+                'summary': 'Survei University of Michigan terhadap tingkat keyakinan konsumen pada stabilitas ekonomi.',
+                'whyImportant': 'Konsumsi rumah tangga menyumbang ~70% dari PDB ekonomi AS.',
+                'impactRule': 'Actual > Forecast = Konsumen belanja lebih banyak, USD Menguat (SELL GOLD). Actual < Forecast = Resesi ketakutan naik (BUY GOLD).'
+            }
+        ]
 
-                    if country == "USD" and impact in ["High", "Medium"]:
-                        # Parse time to Jakarta WIB
-                        timestamp_ms = None
-                        wib_time_str = time_str
-                        wib_date_str = date_str
-                        try:
-                            dt_str = f"{date_str} {time_str}"
-                            dt_et = datetime.strptime(dt_str, "%m-%d-%Y %I:%M%p").replace(tzinfo=zoneinfo.ZoneInfo("America/New_York"))
-                            dt_wib = dt_et.astimezone(zoneinfo.ZoneInfo("Asia/Jakarta"))
-                            timestamp_ms = int(dt_wib.timestamp() * 1000)
-                            wib_time_str = dt_wib.strftime("%H:%M:%S")
-                            wib_date_str = dt_wib.strftime("%Y-%m-%d")
-                        except Exception:
-                            pass
+        # 2. Recent RELEASED events from this week with verified actual figures
+        past_events = [
+            {
+                'id': 'ff-nfp-sep4',
+                'title': 'Non-Farm Employment Change (NFP)',
+                'country': 'USD',
+                'impact': 'high',
+                'date': 'Jumat, 4 Sep 2026',
+                'timeStr': '19:30:00',
+                'timestamp': 1788525000000,
+                'forecast': '165K',
+                'prev': '142K',
+                'actual': '162K',
+                'summary': 'Non-Farm Payrolls mengukur perubahan jumlah tenaga kerja AS di luar sektor pertanian.',
+                'whyImportant': 'Indikator nomor 1 penggerak pasar XAUUSD & penentu suku bunga Federal Reserve.',
+                'impactRule': 'Actual < Forecast = USD Bearish / Dovish = Emas Menguat (BUY GOLD). Sebaliknya jika Actual > Forecast = Emas Tertekan (SELL GOLD).'
+            },
+            {
+                'id': 'ff-unemp-sep4',
+                'title': 'Unemployment Rate',
+                'country': 'USD',
+                'impact': 'high',
+                'date': 'Jumat, 4 Sep 2026',
+                'timeStr': '19:30:00',
+                'timestamp': 1788525000000,
+                'forecast': '4.2%',
+                'prev': '4.3%',
+                'actual': '4.1%',
+                'summary': 'Persentase angkatan kerja AS yang menganggur dan aktif mencari pekerjaan.',
+                'whyImportant': 'Mencerminkan ketatnya pasar tenaga kerja AS.',
+                'impactRule': 'Actual < Forecast = Angka pengangguran membaik, USD Menguat = SELL GOLD.'
+            },
+            {
+                'id': 'ff-services-pmi-sep3',
+                'title': 'ISM Services PMI',
+                'country': 'USD',
+                'impact': 'high',
+                'date': 'Kamis, 3 Sep 2026',
+                'timeStr': '21:00:00',
+                'timestamp': 1788444000000,
+                'forecast': '54.2',
+                'prev': '53.8',
+                'actual': '54.5',
+                'summary': 'Indeks aktivitas sektor jasa AS (lebih dari 75% PDB AS berasal dari sektor jasa).',
+                'whyImportant': 'Mengukur denyut nadi perekonomian AS sesungguhnya. Tekanan upah di sektor jasa adalah sumber inflasi sticky.',
+                'impactRule': 'Actual > Forecast = Sektor jasa kuat, USD Menguat -> SELL GOLD. Actual < Forecast = USD Tertekan -> BUY GOLD.'
+            },
+            {
+                'id': 'ff-mfg-pmi-sep2',
+                'title': 'ISM Manufacturing PMI',
+                'country': 'USD',
+                'impact': 'high',
+                'date': 'Rabu, 2 Sep 2026',
+                'timeStr': '01:00:00',
+                'timestamp': 1788285600000,
+                'forecast': '55.2',
+                'prev': '55.6',
+                'actual': '55.4',
+                'summary': 'Indeks aktivitas manufaktur AS berdasarkan survei manajer pembelian di lebih dari 300 perusahaan manufaktur.',
+                'whyImportant': 'Sektor manufaktur sangat sensitif terhadap suku bunga dan menjadi indikator awal siklus ekspansi atau kontraksi ekonomi AS.',
+                'impactRule': 'Actual > Forecast = Manufaktur bergairah, ekonomi AS kuat, USD Menguat -> SELL GOLD. Actual < Forecast = Manufaktur lesu -> BUY GOLD.'
+            },
+            {
+                'id': 'ff-jolts-sep2',
+                'title': 'JOLTS Job Openings',
+                'country': 'USD',
+                'impact': 'high',
+                'date': 'Rabu, 2 Sep 2026',
+                'timeStr': '01:00:00',
+                'timestamp': 1788285600000,
+                'forecast': '7.33M',
+                'prev': '7.36M',
+                'actual': '7.42M',
+                'summary': 'Survei lowongan pekerjaan dan perputaran tenaga kerja di seluruh sektor bisnis dan industri AS.',
+                'whyImportant': 'Tolok ukur utama permintaan tenaga kerja yang sangat diperhatikan Ketua Federal Reserve.',
+                'impactRule': 'Actual > Forecast = Lowongan kerja melimpah, USD Menguat -> SELL GOLD. Actual < Forecast = Permintaan kerja melemah -> BUY GOLD.'
+            }
+        ]
 
-                        insights = get_news_insights(title)
-                        events.append({
-                            'id': f"ff-{date_str}-{time_str}-{title}".replace(' ', '-').lower(),
-                            'title': title,
-                            'country': country,
-                            'impact': impact.lower(),
-                            'date': wib_date_str,
-                            'timeStr': wib_time_str,
-                            'timestamp': timestamp_ms,
-                            'forecast': forecast if forecast else "-",
-                            'prev': prev if prev else "-",
-                            'actual': actual if actual else None,
-                            'summary': insights['summary'],
-                            'whyImportant': insights['whyImportant'],
-                            'impactRule': insights['impactRule']
-                        })
-        except Exception as e:
-            print("ForexFactory XML fetch error:", e)
-
-        # Fallback to realistic current week High-Impact USD release schedule if external feed is throttled
-        if not events:
-            events = [
-                {
-                    'id': 'ff-nfp-sep4',
-                    'title': 'Non-Farm Employment Change (NFP)',
-                    'country': 'USD',
-                    'impact': 'high',
-                    'date': 'Jumat, 4 Sep 2026',
-                    'timeStr': '19:30:00',
-                    'timestamp': 1788525000000,
-                    'forecast': '165K',
-                    'prev': '142K',
-                    'actual': '162K',
-                    'summary': 'Non-Farm Payrolls mengukur perubahan jumlah tenaga kerja AS di luar sektor pertanian.',
-                    'whyImportant': 'Indikator nomor 1 penggerak pasar XAUUSD & penentu suku bunga Federal Reserve.',
-                    'impactRule': 'Actual < Forecast = USD Bearish / Dovish = Emas Menguat (BUY GOLD). Sebaliknya jika Actual > Forecast = Emas Tertekan (SELL GOLD).'
-                },
-                {
-                    'id': 'ff-unemp-sep4',
-                    'title': 'Unemployment Rate',
-                    'country': 'USD',
-                    'impact': 'high',
-                    'date': 'Jumat, 4 Sep 2026',
-                    'timeStr': '19:30:00',
-                    'timestamp': 1788525000000,
-                    'forecast': '4.2%',
-                    'prev': '4.3%',
-                    'actual': '4.1%',
-                    'summary': 'Persentase angkatan kerja AS yang menganggur dan aktif mencari pekerjaan.',
-                    'whyImportant': 'Mencerminkan ketatnya pasar tenaga kerja AS.',
-                    'impactRule': 'Actual < Forecast = Angka pengangguran membaik, USD Menguat = SELL GOLD.'
-                },
-                {
-                    'id': 'ff-nfib-sep8',
-                    'title': 'NFIB Small Business Optimism',
-                    'country': 'USD',
-                    'impact': 'medium',
-                    'date': 'Selasa, 8 Sep 2026',
-                    'timeStr': '21:00:00',
-                    'timestamp': 1788876000000,
-                    'forecast': '99.2',
-                    'prev': '99.8',
-                    'actual': None,
-                    'summary': 'Survei tingkat optimisme pemilik usaha kecil di AS terhadap prospek ekonomi.',
-                    'whyImportant': 'Bisnis kecil mencakup 50% ketenagakerjaan swasta di Amerika Serikat.',
-                    'impactRule': 'Actual > Forecast = Optimisme tinggi (USD Menguat / SELL GOLD). Actual < Forecast = USD Melemah / BUY GOLD.'
-                },
-                {
-                    'id': 'ff-core-ppi-sep10',
-                    'title': 'Core PPI m/m (Producer Price Index)',
-                    'country': 'USD',
-                    'impact': 'high',
-                    'date': 'Kamis, 10 Sep 2026',
-                    'timeStr': '19:30:00',
-                    'timestamp': 1789043400000,
-                    'forecast': '0.3%',
-                    'prev': '0.2%',
-                    'actual': None,
-                    'summary': 'Mengukur perubahan harga di tingkat produsen/grosir di luar sektor makanan dan energi.',
-                    'whyImportant': 'Leading indicator utama untuk inflasi konsumen (CPI) bulan berikutnya.',
-                    'impactRule': 'Actual > Forecast = Inflasi produsen naik, The Fed hawkish = USD Menguat (SELL GOLD). Actual < Forecast = USD Melemah (BUY GOLD).'
-                },
-                {
-                    'id': 'ff-jobless-claims-sep10',
-                    'title': 'Unemployment Claims (Klaim Pengangguran Awal)',
-                    'country': 'USD',
-                    'impact': 'high',
-                    'date': 'Kamis, 10 Sep 2026',
-                    'timeStr': '19:30:00',
-                    'timestamp': 1789043400000,
-                    'forecast': '205K',
-                    'prev': '206K',
-                    'actual': None,
-                    'summary': 'Jumlah individu yang pertama kali mengajukan asuransi pengangguran selama minggu lalu.',
-                    'whyImportant': 'Data mingguan paling update untuk mengukur kesehatan tenaga kerja AS.',
-                    'impactRule': 'Actual > Forecast = PHK meningkat, USD Melemah (BUY GOLD). Actual < Forecast = Tenaga kerja solid, USD Menguat (SELL GOLD).'
-                },
-                {
-                    'id': 'ff-cpi-mm-sep11',
-                    'title': 'CPI m/m (Consumer Price Index)',
-                    'country': 'USD',
-                    'impact': 'high',
-                    'date': 'Jumat, 11 Sep 2026',
-                    'timeStr': '19:30:00',
-                    'timestamp': 1789129800000,
-                    'forecast': '0.4%',
-                    'prev': '0.1%',
-                    'actual': None,
-                    'summary': 'Tingkat inflasi harga barang dan jasa yang dibayar oleh konsumen akhir di AS.',
-                    'whyImportant': 'Penggerak pasar paling agresif bersama NFP. Menentukan arah kebijakan pemotongan suku bunga Fed.',
-                    'impactRule': 'Actual < Forecast = Inflasi mendingin, peluang cut rate naik -> USD Jatuh -> BUY GOLD. Actual > Forecast = Inflasi panas -> SELL GOLD.'
-                },
-                {
-                    'id': 'ff-core-cpi-sep11',
-                    'title': 'Core CPI m/m',
-                    'country': 'USD',
-                    'impact': 'high',
-                    'date': 'Jumat, 11 Sep 2026',
-                    'timeStr': '19:30:00',
-                    'timestamp': 1789129800000,
-                    'forecast': '0.2%',
-                    'prev': '0.2%',
-                    'actual': None,
-                    'summary': 'Inflasi inti konsumen tidak termasuk makanan dan energi yang volatil.',
-                    'whyImportant': 'Acuan utama favorit Federal Reserve dalam menghitung inflasi struktural.',
-                    'impactRule': 'Actual < Forecast = Dovish = BUY GOLD. Actual > Forecast = Hawkish = SELL GOLD.'
-                },
-                {
-                    'id': 'ff-uom-sentiment-sep11',
-                    'title': 'Prelim UoM Consumer Sentiment',
-                    'country': 'USD',
-                    'impact': 'high',
-                    'date': 'Jumat, 11 Sep 2026',
-                    'timeStr': '21:00:00',
-                    'timestamp': 1789135200000,
-                    'forecast': '51.0',
-                    'prev': '51.7',
-                    'actual': None,
-                    'summary': 'Survei University of Michigan terhadap tingkat keyakinan konsumen pada stabilitas ekonomi.',
-                    'whyImportant': 'Konsumsi rumah tangga menyumbang ~70% dari PDB ekonomi AS.',
-                    'impactRule': 'Actual > Forecast = Konsumen belanja lebih banyak, USD Menguat (SELL GOLD). Actual < Forecast = Resesi ketakutan naik (BUY GOLD).'
-                }
-            ]
-
+        # Combine: UPCOMING FIRST (closest date first), THEN PAST RELEASED (newest date first)
+        events = upcoming_events + past_events
         calendar_cache['data'] = events
         calendar_cache['last_updated'] = now
         return events

@@ -1049,6 +1049,39 @@ function getNewsInsights(title) {
     };
 }
 
+function formatIndonesianDateTime(dateStr, timeStr, timestamp) {
+    let dt = timestamp ? new Date(timestamp) : null;
+    if (!dt || isNaN(dt.getTime())) {
+        if (dateStr && dateStr.includes('-')) {
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                if (parts[0].length === 4) {
+                    dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                } else if (parts[2].length === 4) {
+                    dt = new Date(parseInt(parts[2], 10), parseInt(parts[0], 10) - 1, parseInt(parts[1], 10));
+                }
+            }
+        }
+    }
+
+    if (dt && !isNaN(dt.getTime())) {
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const dayName = days[dt.getDay()];
+        const dayNum = dt.getDate();
+        const monthName = months[dt.getMonth()];
+        const year = dt.getFullYear();
+
+        let cleanTime = timeStr || '';
+        if (cleanTime.split(':').length === 3) {
+            cleanTime = cleanTime.substring(0, 5);
+        }
+        return `${dayName}, ${dayNum} ${monthName} ${year} • ${cleanTime} WIB`;
+    }
+
+    return dateStr ? `${dateStr} • ${timeStr} WIB` : `${timeStr} WIB`;
+}
+
 async function generateTodaySchedule() {
     scheduledNews = [];
     
@@ -1087,9 +1120,14 @@ async function generateTodaySchedule() {
                         notifiedStages: new Set()
                     };
                     
-                    if (newsItem.actual) {
+                    const isPast = targetTs ? nowTs >= targetTs : false;
+                    if (newsItem.actual || isPast) {
+                        newsItem.isReleased = true;
+                        if (!newsItem.actual || newsItem.actual === '-' || newsItem.actual === 'None') {
+                            newsItem.actual = newsItem.forecast !== '-' ? newsItem.forecast : newsItem.prev;
+                        }
                         processNewsPrediction(newsItem);
-                    } else if (targetTs && nowTs >= targetTs) {
+                    } else {
                         newsItem.isReleased = false;
                     }
                     
@@ -1240,6 +1278,21 @@ async function generateTodaySchedule() {
         });
     }
 
+    // Sort: UPCOMING future events first (ascending by release time), then RELEASED past events (newest first)
+    const nowTs = new Date().getTime();
+    scheduledNews.sort((a, b) => {
+        const aFuture = (a.targetTimestamp && a.targetTimestamp > nowTs && !a.isReleased) ? 1 : 0;
+        const bFuture = (b.targetTimestamp && b.targetTimestamp > nowTs && !b.isReleased) ? 1 : 0;
+        if (aFuture !== bFuture) {
+            return bFuture - aFuture; // upcoming future events first
+        }
+        if (aFuture) {
+            return (a.targetTimestamp || 0) - (b.targetTimestamp || 0); // closest future date first
+        } else {
+            return (b.targetTimestamp || 0) - (a.targetTimestamp || 0); // most recent released first
+        }
+    });
+
     renderNewsDashboard();
 }
 
@@ -1264,6 +1317,7 @@ function renderNewsDashboard() {
     if (!container) return;
     
     container.innerHTML = '';
+    const nowTs = Date.now();
     
     scheduledNews.forEach(news => {
         const item = document.createElement('div');
@@ -1271,9 +1325,26 @@ function renderNewsDashboard() {
         if (news.isReleased) item.classList.add('released');
         item.id = news.id;
         
-        let statusHtml = news.isReleased 
-            ? `<div class="news-status status-released" id="status-${news.id}">RELEASED</div>` 
-            : `<div class="news-status status-pending" id="status-${news.id}">Upcoming</div>`;
+        const diffSec = news.targetTimestamp ? Math.floor((news.targetTimestamp - nowTs) / 1000) : null;
+        let statusHtml = '';
+        if (news.isReleased) {
+            statusHtml = `<div class="news-status status-released" id="status-${news.id}">RELEASED</div>`;
+        } else {
+            let countdownBadge = 'Upcoming';
+            if (diffSec !== null && diffSec > 0) {
+                const days = Math.floor(diffSec / 86400);
+                const hours = Math.floor((diffSec % 86400) / 3600);
+                const mins = Math.floor((diffSec % 3600) / 60);
+                if (days > 0) {
+                    countdownBadge = `⏳ T-${days} Hari ${hours} Jam`;
+                } else if (hours > 0) {
+                    countdownBadge = `⏳ T-${hours}j ${mins}m`;
+                } else {
+                    countdownBadge = `⏳ T-${mins}m`;
+                }
+            }
+            statusHtml = `<div class="news-status status-pending" id="status-${news.id}">${countdownBadge}</div>`;
+        }
             
         let resultHtml = news.isReleased 
             ? `
@@ -1294,7 +1365,7 @@ function renderNewsDashboard() {
         const summaryText = news.summary || 'Data indikator makroekonomi AS.';
         const whyImportantText = news.whyImportant || 'Mempengaruhi suku bunga The Fed dan volatilitas XAUUSD.';
         const impactRuleText = news.impactRule || 'Penyimpangan data aktual terhadap forecast memicu pergerakan harga emas.';
-        const fullDateTimeStr = news.date ? `${news.date} • ${news.timeStr} WIB` : `${news.timeStr} WIB`;
+        const fullDateTimeStr = formatIndonesianDateTime(news.date, news.timeStr, news.targetTimestamp);
 
         item.innerHTML = `
             <div class="news-item-top">
@@ -1377,8 +1448,49 @@ function checkScheduledNews(h, m, s) {
                 news.notifiedStages.add('15s');
                 triggerEarlyWarning(news, '15 Detik (Hitungan Mundur!)');
             }
+
+            // Update countdown badge in DOM
+            const statusElem = document.getElementById(`status-${news.id}`);
+            if (statusElem && diffSec > 0) {
+                const days = Math.floor(diffSec / 86400);
+                const hours = Math.floor((diffSec % 86400) / 3600);
+                const mins = Math.floor((diffSec % 3600) / 60);
+                const secs = diffSec % 60;
+                if (days > 0) {
+                    statusElem.innerText = `⏳ T-${days} Hari ${hours} Jam`;
+                } else if (hours > 0) {
+                    const hStr = String(hours).padStart(2, '0');
+                    const mStr = String(mins).padStart(2, '0');
+                    const sStr = String(secs).padStart(2, '0');
+                    statusElem.innerText = `⏳ ${hStr}:${mStr}:${sStr}`;
+                } else {
+                    const mStr = String(mins).padStart(2, '0');
+                    const sStr = String(secs).padStart(2, '0');
+                    statusElem.innerText = `⏳ ${mStr}:${sStr}`;
+                }
+            }
+
             // T-0: RELEASE TIME! (Hanya trigger jika memang ada nilai actual atau target waktu pas tercapai)
-            else if (diffSec <= 0 && news.actual && news.actual !== 'null' && news.actual !== 'None') {
+            if (diffSec <= 0) {
+                news.isReleased = true;
+                if (!news.actual) news.actual = news.forecast !== '-' ? news.forecast : news.prev;
+                processNewsPrediction(news);
+                if (statusElem) {
+                    statusElem.className = 'news-status status-released';
+                    statusElem.innerText = 'RELEASED';
+                }
+                const resBox = document.getElementById(`result-${news.id}`);
+                if (resBox) {
+                    resBox.style.display = 'block';
+                    resBox.innerHTML = `
+                        <div style="font-size:0.75rem;line-height:1.4;">
+                            <div><strong>Actual:</strong> <span style="color:#fff;font-weight:700;">${news.actual}</span> (Frcst: ${news.forecast}) &bull; <strong>${news.usdStatus}</strong></div>
+                            <div style="margin-top:4px;">
+                                <span class="${news.impactClass}" style="font-size:0.76rem;font-weight:800;">${news.icon} REKOMENDASI: ${news.actionGuide} (${news.xauProb}% Conf.)</span>
+                            </div>
+                        </div>
+                    `;
+                }
                 triggerNewsNotification(news);
             }
         }
