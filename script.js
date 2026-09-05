@@ -826,12 +826,14 @@ function updateClock() {
 }
 setInterval(updateClock, 1000);
 
-// --- MOCK NEWS ENGINE (DASHBOARD & TOAST) ---
+// --- ECONOMIC NEWS ENGINE (DASHBOARD & TOAST) ---
 const mockNewsData = [
     { title: "Non Farm Payrolls (NFP)", prev: "175K", forecast: "180K", actualBase: 180, unit: "K", impact: "high" },
     { title: "US CPI m/m", prev: "0.3%", forecast: "0.2%", actualBase: 0.2, unit: "%", impact: "high" },
     { title: "Fed Interest Rate", prev: "5.50%", forecast: "5.50%", actualBase: 5.5, unit: "%", impact: "high" },
     { title: "US Unemployment Rate", prev: "3.9%", forecast: "3.9%", actualBase: 3.9, unit: "%", impact: "medium" }
+];
+
 let scheduledNews = [];
 
 function parseNumericValue(valStr) {
@@ -1161,12 +1163,6 @@ function triggerNewsNotification(news) {
 // ==========================================================================
 // REAL-TIME NOAH ALGO EA SIGNAL ENGINE
 // ==========================================================================
-const eaHistoricalLogs = [
-    { time: '16:34:10', type: 'BUY', signal: 'EMA 20/50 Golden Cross', price: '2,646.80', result: '+18 Pips' },
-    { time: '16:22:45', type: 'BUY', signal: 'RSI Bullish Divergence', price: '2,643.20', result: '+32 Pips' },
-    { time: '16:08:15', type: 'SELL', signal: 'Bearish Pin Bar Rejection', price: '2,652.50', result: '+24 Pips' }
-];
-
 let userAlertPreferences = {
     '30m': true,
     '20m': true,
@@ -1185,9 +1181,6 @@ function toggleAlertSetting(stage, element) {
     }
 }
 
-// ==========================================================================
-// REAL-TIME NOAH ALGO EA SIGNAL ENGINE
-// ==========================================================================
 const eaHistoricalLogs = [
     { time: '16:34:10', type: 'SELL', signal: 'NFP Strong Data Drop', price: '4,438.50', result: '+45 Pips' },
     { time: '16:22:45', type: 'SELL', signal: 'Resistance Zone Rejection', price: '4,442.20', result: '+32 Pips' },
